@@ -36,6 +36,37 @@ final class GameUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["gameStatus"].label.contains("保存") || app.staticTexts["gameStatus"].label.contains("暂停"))
         app.tabBars.buttons["棋谱"].tap(); capture("game-05-persisted-history")
     }
+    func testCompleteNormalGameCancelRetryAndReenter() throws {
+        app.terminate()
+        let moves = ["e2e4", "e7e5", "g1f3", "d7d6", "d2d4", "c8g4", "d4e5", "g4f3", "d1f3", "d6e5", "f1c4", "g8f6", "f3b3", "d8e7", "b1c3", "c7c6", "c1g5", "b7b5", "c3b5", "c6b5", "c4b5", "b8d7", "e1c1", "a8d8", "d1d7", "d8d7", "h1d1", "e7e6", "b5d7", "f6d7", "b3b8", "d7b8", "d1d8"]
+        app.launchEnvironment["YIWAI_UI_GAME_MOVES"] = String(data:try JSONEncoder().encode(moves),encoding:.utf8)!
+        app.launch(); app.tabBars.buttons["下棋"].tap()
+        XCTAssertTrue(app.staticTexts["gameStatus"].waitForExistence(timeout:8))
+        XCTAssertTrue(app.staticTexts["gameStatus"].label.contains("将死"))
+        reveal(app.buttons["reviewGame"]); app.buttons["reviewGame"].tap()
+        XCTAssertTrue(app.buttons["reviewNext"].waitForExistence(timeout:8)); app.buttons["reviewNext"].tap()
+        reveal(app.buttons["analyzeGame"]); app.buttons["analyzeGame"].tap()
+        XCTAssertTrue(app.buttons["cancelAnalysis"].waitForExistence(timeout:5)); app.buttons["cancelAnalysis"].tap()
+        XCTAssertFalse(app.staticTexts["coachTitle"].exists)
+        app.buttons["analyzeGame"].tap()
+        XCTAssertTrue(app.staticTexts["coachTitle"].waitForExistence(timeout:90))
+        XCTAssertEqual(app.staticTexts["analysisProgress"].label,"已分析 33 / 33 步")
+        XCTAssertFalse(app.staticTexts["analysisError"].exists)
+        capture("fix-release-normal-game-coach")
+        reveal(app.buttons["bestEvidence"]); app.buttons["bestEvidence"].tap()
+        XCTAssertTrue(app.buttons["evidenceNext"].waitForExistence(timeout:5)); app.buttons["evidenceNext"].tap()
+        XCTAssertTrue(app.staticTexts["evidencePly"].label.hasPrefix("1 /"))
+        app.terminate(); app.launchEnvironment = [:]
+        app.launchArguments = ["-ui-testing","-simulate-no-network"]; app.launch()
+        app.tabBars.buttons["棋谱"].tap()
+        let record = app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","record-")).firstMatch
+        XCTAssertTrue(record.waitForExistence(timeout:8)); record.tap()
+        XCTAssertTrue(app.buttons["reviewNext"].waitForExistence(timeout:8)); app.buttons["reviewNext"].tap()
+        reveal(app.staticTexts["coachTitle"])
+        XCTAssertTrue(app.staticTexts["coachTitle"].waitForExistence(timeout:8))
+        XCTAssertEqual(app.staticTexts["analysisProgress"].label,"已分析 33 / 33 步")
+        capture("fix-release-reentered-saved-report")
+    }
     func testDragMoveAndCancelledReview() {
         newGame()
         let source = app.buttons["square-e2"].coordinate(withNormalizedOffset:CGVector(dx:0.5,dy:0.5))

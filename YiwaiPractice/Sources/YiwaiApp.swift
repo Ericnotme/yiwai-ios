@@ -15,6 +15,12 @@ import SwiftUI
         _notebook = StateObject(wrappedValue:Notebook(file:testFile))
         let gameFile = testMode ? testFile?.deletingLastPathComponent().appendingPathComponent("ui-test-games.json") : nil
         if ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let gameFile { try? FileManager.default.removeItem(at:gameFile) }
+        // Release UI tests use the real bundled engine with an isolated game file.
+        if testMode, let gameFile, let fixture = ProcessInfo.processInfo.environment["YIWAI_UI_GAME_MOVES"],
+           let data = fixture.data(using:.utf8), let moves = try? JSONDecoder().decode([String].self,from:data) {
+            try? FileManager.default.createDirectory(at:gameFile.deletingLastPathComponent(),withIntermediateDirectories:true)
+            try? JSONEncoder().encode([GameRecord(moves:moves,ending:"saved")]).write(to:gameFile,options:.atomic)
+        }
         let controller = GameController(file:gameFile)
         #if DEBUG
         if testMode && ProcessInfo.processInfo.arguments.contains("-ui-promotion-fixture") {
@@ -253,7 +259,7 @@ struct AboutView: View {
                     VStack(alignment:.leading,spacing:12) {
                         Text("弈外 · 练习版").font(.title2.weight(.semibold))
                         Text("不急着多走一步。\n先把这一步的道理看清。").font(.body).lineSpacing(5)
-                        Text("0.3 · 原生 iPhone 试用版").font(.caption).foregroundStyle(.secondary)
+                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 原生 iPhone 试用版").font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical,14)
                 }
                 Section("本版能做什么") {

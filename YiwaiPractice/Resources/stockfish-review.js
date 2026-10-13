@@ -1,4 +1,16 @@
 // Local-only worker transport. The unmodified GPL engine remains a separate asset.
+// One exact UCI info line is an atomic result. A time-limited bestmove can name
+// a newer fail-high (lowerbound) candidate, which has no exact score yet.
+var YiwaiUCI = {
+  exactResult(line) {
+    if (!line.startsWith('info ') || /\b(lowerbound|upperbound)\b/.test(line)) return null;
+    const score=line.match(/\bscore (cp|mate) (-?\d+)/), depth=line.match(/\bdepth (\d+)/), pv=line.match(/\bpv (.+)/), nodes=line.match(/\bnodes (\d+)/);
+    if (!score || !depth || Number(depth[1]) < 1 || !pv) return null;
+    const moves=pv[1].trim().split(/\s+/);
+    if (!moves.every(move => /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move))) return null;
+    return {move:moves[0],score:{type:score[1],value:Number(score[2])},depth:Number(depth[1]),pv:moves,nodes:Number(nodes?.[1]||0)};
+  }
+};
 window.YiwaiStockfish = (() => {
   let worker, objectURL, pending, readyReject, readyTimer;
   const fail = message => { if(readyReject)readyReject(Error(message)); if(pending){clearTimeout(pending.timer);pending.reject(Error(message));pending=null;} };
@@ -27,12 +39,15 @@ window.YiwaiStockfish = (() => {
         }
         if(data==='readyok'){clearTimeout(readyTimer);readyReject=null;resolve();}
         if(pending&&data.startsWith('info ')){
-          const score=data.match(/score (cp|mate) (-?\d+)/), depth=data.match(/\bdepth (\d+)/), pv=data.match(/\bpv (.+)/), nodes=data.match(/\bnodes (\d+)/);
-          if(score&&depth&&pv&&!/\b(lowerbound|upperbound)\b/.test(data))Object.assign(pending,{score:{type:score[1],value:Number(score[2])},depth:Number(depth[1]),pv:pv[1].trim().split(/\s+/),nodes:Number(nodes?.[1]||0)});
+          const result=YiwaiUCI.exactResult(data);
+          if(result)pending.result=result;
         }
         if(pending&&data.startsWith('bestmove ')){
           const p=pending;pending=null;clearTimeout(p.timer);
-          p.resolve({move:data.split(' ')[1],score:p.score,depth:p.depth,pv:p.pv||[],nodes:p.nodes||0});
+          // bestmove ends the search; it must not overwrite the root move of
+          // the last exact score/PV. Never treat a bound as a precise score.
+          if(p.result)p.resolve(p.result);
+          else p.reject(Error('引擎未完成有效评分，请重试'));
         }
       };
       worker.postMessage('uci');

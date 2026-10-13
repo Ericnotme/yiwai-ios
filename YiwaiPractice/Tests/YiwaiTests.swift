@@ -2,6 +2,7 @@ import XCTest
 @testable import YiwaiPractice
 
 final class YiwaiTests: XCTestCase {
+    #if DEBUG
     func testOfflineFailureInjectionRejectsURLLoading() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [OfflineTestProtocol.self]
@@ -14,6 +15,7 @@ final class YiwaiTests: XCTestCase {
             XCTAssertEqual(error.code,.notConnectedToInternet)
         }
     }
+    #endif
     func testAllNineAuthoredPositionsAndEveryReplayMove() throws {
         let engine = try ChessEngine()
         var count = 0

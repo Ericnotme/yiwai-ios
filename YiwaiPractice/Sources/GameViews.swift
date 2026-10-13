@@ -141,7 +141,11 @@ struct GameHistoryView: View {
                                 Text(record.ending == "resigned" ? "已认输 · 查看复盘" : "逐步回放 · AI Coach").font(.subheadline)
                             }.padding(.vertical,5)
                         }.accessibilityIdentifier("record-\(record.id.uuidString)")
-                        if record.ending != "resigned" { Button("继续这盘棋") { resume(record.id) }.font(.subheadline).frame(minHeight:44) }
+                        if record.ending != "resigned" {
+                            Button("继续这盘棋") { resume(record.id) }
+                                .buttonStyle(.borderless).font(.subheadline).frame(minHeight:44)
+                                .accessibilityIdentifier("resume-record-\(record.id.uuidString)")
+                        }
                     }
                 }
             }.scrollContentBackground(.hidden).background(Palette.paper).navigationTitle("棋谱")
@@ -322,6 +326,10 @@ struct GameReviewView: View {
                 else { Button(model.report == nil ? "分析整局" : "重新分析") { model.analyze { game.saveReview($0,record:record) } }.disabled(record.moves.isEmpty).accessibilityIdentifier("analyzeGame") }
             }.frame(minHeight:44)
             if model.running { ProgressView(value:Double(model.completed),total:Double(record.moves.count+1)) }
+            if let error = model.error {
+                Text(error + "。棋谱已保留，可点上方按钮重试。")
+                    .font(.subheadline).foregroundStyle(.red).accessibilityIdentifier("analysisError")
+            }
             Text("Stockfish 19 lite 在本机分析；规则讲解，不是大模型对话。取消后保留上一份完整报告。").font(.caption).foregroundStyle(.secondary)
         }.padding(14).background(.white,in:RoundedRectangle(cornerRadius:12))
     }

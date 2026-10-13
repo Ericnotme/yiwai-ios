@@ -72,9 +72,11 @@ struct GameReviewReport: Codable {
               let sourceURL = Bundle.main.url(forResource:"stockfish-19-lite-single",withExtension:"js",subdirectory:"Stockfish") else { throw ChessFailure.invalid("Stockfish 尚未随此构建提供；不能用 Seed 分值代替准确度") }
         let source = try String(contentsOf:sourceURL,encoding:.utf8), wasm = try Data(contentsOf:wasmURL).base64EncodedString()
         let input: [String:Any] = ["initialFEN":record.initialFEN,"history":record.moves,"duration":duration,"gameComplete":record.ending=="resigned","runID":runID]
-        let result = try await webView.callAsyncJavaScript("return await window.YiwaiStockfish.run(input, source, wasm);",arguments:["input":input,"source":source,"wasm":wasm],in:nil,contentWorld:.page)
+        let result = try await webView.callAsyncJavaScript("try { return {report: await window.YiwaiStockfish.run(input, source, wasm)}; } catch (error) { return {error: String(error.message || error)}; }",arguments:["input":input,"source":source,"wasm":wasm],in:nil,contentWorld:.page)
         guard !cancelled, !Task.isCancelled else { throw CancellationError() }
-        guard let json = result as? String, let data = json.data(using:.utf8) else { throw ChessFailure.invalid("分析结果为空") }
+        guard let envelope = result as? [String:Any] else { throw ChessFailure.invalid("分析结果为空") }
+        if let message = envelope["error"] as? String { throw ChessFailure.invalid(message) }
+        guard let json = envelope["report"] as? String, let data = json.data(using:.utf8) else { throw ChessFailure.invalid("分析结果为空") }
         let report = try JSONDecoder().decode(GameReviewReport.self,from:data)
         guard report.matches(record) else { throw ChessFailure.invalid("分析结果与棋谱不匹配") }
         return report
