@@ -53,6 +53,12 @@ final class ChessEngine {
         guard let frames = response.frames else { throw ChessFailure.invalid(response.error ?? "局面无效") }
         return frames
     }
+    func validateReview(_ report: GameReviewReport, record: GameRecord) throws {
+        struct Validation: Decodable { let valid: Bool }
+        let entries: [[String:Any]] = report.entries.map { ["ply":$0.ply,"bestPV":$0.bestPV,"playedPV":$0.playedPV] }
+        let result: Validation = try call("validateReview",[record.initialFEN,record.moves,entries])
+        guard result.valid else { throw ChessFailure.invalid("缓存报告未通过棋规校验") }
+    }
     func perft(fen: String, depth: Int) -> Int {
         Int(context.objectForKeyedSubscript("YiwaiChess")?.invokeMethod("perft",withArguments:[fen,depth])?.toInt32() ?? 0)
     }

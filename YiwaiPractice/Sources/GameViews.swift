@@ -169,40 +169,50 @@ struct GameHistoryView: View {
     @Published var engine: StockfishReviewEngine?
     private var task: Task<Void,Never>?
     private var requestID = UUID()
+    private static let loadQueue = DispatchQueue(label:"yiwai.review-loading",qos:.userInitiated)
+    private var loadID = UUID()
+    private var loadCancellation: SearchCancellation?
+    private var loaded = false
     var results: [Int:ReviewedMove] { Dictionary(uniqueKeysWithValues:(report?.entries ?? []).map { ($0.ply-1,$0) }) }
     init(record: GameRecord) { self.record = record }
     func load() {
-        guard loading else { return }
+        guard !loaded, loadCancellation == nil else { return }
+        let id = UUID(), cancellation = SearchCancellation()
+        loadID = id; loadCancellation = cancellation; loading = true; error = nil
         let record = record
-        EngineWorker.queue.async { [weak self] in
+        Self.loadQueue.async { [weak self] in
             do {
-                let engine = try ChessEngine(); let frames = try engine.frames(fen:record.initialFEN,moves:record.moves)
+                guard !cancellation.isCancelled else { return }
+                let engine = try ChessEngine(cancellation:cancellation); let frames = try engine.frames(fen:record.initialFEN,moves:record.moves)
                 let snapshot = try engine.game(record)
-                let url = FileManager.default.temporaryDirectory.appendingPathComponent("Yiwai-\(record.id.uuidString).pgn")
-                try snapshot.pgn.write(to:url,atomically:true,encoding:.utf8)
                 var cached: GameReviewReport?
                 if let report = record.reviewReport, report.matches(record) {
                     do {
-                        for entry in report.entries {
-                            let history = Array(record.moves.prefix(entry.ply-1))
-                            _ = try engine.frames(fen:record.initialFEN,moves:history+entry.bestPV)
-                            _ = try engine.frames(fen:record.initialFEN,moves:history+entry.playedPV)
-                        }
+                        try engine.validateReview(report,record:record)
                         cached = report
                     } catch { cached = nil }
                 }
+                guard !cancellation.isCancelled else { return }
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("Yiwai-\(record.id.uuidString).pgn")
+                try snapshot.pgn.write(to:url,atomically:true,encoding:.utf8)
                 DispatchQueue.main.async {
-                    self?.frames = frames; self?.pgnURL = url; self?.result = snapshot.result; self?.reason = snapshot.reason
-                    self?.report = cached; self?.duration = cached?.duration ?? 450; self?.loading = false
+                    guard let self, self.loadID == id, !cancellation.isCancelled else { return }
+                    self.frames = frames; self.pgnURL = url; self.result = snapshot.result; self.reason = snapshot.reason
+                    self.report = cached; self.duration = cached?.duration ?? 450; self.loading = false
+                    self.loaded = true; self.loadCancellation = nil
                 }
-            } catch { DispatchQueue.main.async { self?.error = error.localizedDescription; self?.loading = false } }
+            } catch { DispatchQueue.main.async {
+                guard let self, self.loadID == id, !cancellation.isCancelled else { return }
+                self.error = error.localizedDescription; self.loading = false; self.loadCancellation = nil
+            } }
         }
     }
     func cancel() {
+        loadCancellation?.cancel(); loadCancellation = nil; loadID = UUID()
         task?.cancel(); task = nil; engine?.cancel(); engine = nil; requestID = UUID(); running = false; completed = 0
     }
     func analyze(save: @escaping @MainActor (GameReviewReport) -> Void) {
-        guard !running, !frames.isEmpty, !record.moves.isEmpty else { return }
+        guard !loading, !running, !frames.isEmpty, !record.moves.isEmpty else { return }
         let id = UUID(); requestID = id; running = true; completed = 0; failures = [:]; error = nil
         let worker = StockfishReviewEngine(); engine = worker
         worker.onProgress = { [weak self] completed,_ in
@@ -300,7 +310,7 @@ struct GameReviewView: View {
         .background { if let engine = model.engine { ReviewEngineHost(engine:engine).frame(width:1,height:1).opacity(0.01).allowsHitTesting(false).accessibilityHidden(true) } }
         .task { model.load() }
         .onDisappear { model.cancel() }
-        .onChange(of:scenePhase) { _,phase in if phase != .active { model.cancel() } }
+        .onChange(of:scenePhase) { _,phase in if phase != .active { model.cancel() } else { model.load() } }
         .onChange(of:plotPly) { _,value in if let value { ply = min(record.moves.count,max(0,value)) } }
         .sheet(item:$evidence) { item in EvidenceView(item:item) }
     }

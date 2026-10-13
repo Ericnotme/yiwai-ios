@@ -19,8 +19,33 @@ var YiwaiChess = (function () {
   function replay(fen,codes,each,limit=600) {
     if(!Array.isArray(codes)||codes.length>limit)throw new Error(`棋谱超出${limit}半回合的本地限制`);
     const b=new Chess(fen); if(each)each(b,null);let last;
-    for(const code of codes){if(outcome(b).result!=='*')throw new Error('终局后不能继续走子');last=b.move(object(code));if(each)each(b,last);}
+    for(const code of codes){checkCancellation();if(outcome(b).result!=='*')throw new Error('终局后不能继续走子');last=b.move(object(code));if(each)each(b,last);}
     return {b,last};
+  }
+  function checkCancellation() {
+    if(typeof nativeCancelled==='function'&&nativeCancelled())throw new Error('棋谱读取已取消');
+  }
+  function validateReview(fen,codes,entries) {
+    if(!Array.isArray(codes)||codes.length>600||!Array.isArray(entries)||entries.length!==codes.length)throw new Error('缓存报告与棋谱长度不匹配');
+    const b=new Chess(fen);
+    // Replay the game once. Undo each short branch to preserve repetition and
+    // fifty-move history without generating board snapshots or legal-reply lists.
+    function branch(line) {
+      if(!Array.isArray(line)||line.length<1||line.length>12)throw new Error('缓存变化线长度无效');
+      let applied=0;
+      try {
+        for(const code of line){checkCancellation();if(outcome(b).result!=='*')throw new Error('变化线越过终局');b.move(object(code));applied++;}
+      } finally { while(applied-->0)b.undo(); }
+    }
+    for(let i=0;i<codes.length;i++) {
+      checkCancellation();
+      const entry=entries[i];
+      if(entry.ply!==i+1||entry.playedPV?.[0]!==codes[i])throw new Error('缓存走法与棋谱不匹配');
+      branch(entry.bestPV);branch(entry.playedPV);
+      if(outcome(b).result!=='*')throw new Error('终局后不能继续走子');
+      b.move(object(codes[i]));
+    }
+    return {valid:true};
   }
   const safe=fn=>{try{return JSON.stringify(fn());}catch(e){return JSON.stringify({error:String(e.message||e)});}};
   function typed(raw,turn) {
@@ -37,6 +62,7 @@ var YiwaiChess = (function () {
   return {
     // A full 600-ply game may still have a 12-ply independent review continuation.
     inspect:(fen,codes)=>safe(()=>{const frames=[];replay(fen,codes,(b,m)=>frames.push(snapshot(b,m)),612);return {frames};}),
+    validateReview:(fen,codes,entries)=>safe(()=>validateReview(fen,codes,entries)),
     game:(fen,codes,info)=>safe(()=>{
       const sans=[];const {b,last}=replay(fen,codes,(b,m)=>{if(m)sans.push(m.san);});const frame=snapshot(b,last);
       const result=frame.result!=='*'?frame.result:(info.ending==='resigned'?(info.human==='w'?'0-1':'1-0'):'*');

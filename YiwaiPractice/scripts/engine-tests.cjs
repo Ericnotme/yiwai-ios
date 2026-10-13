@@ -20,3 +20,25 @@ test('cancellation interrupts search and review',()=>{const c=runtime();c.native
 test('incomplete analysis cannot be presented as zero loss',()=>{const c=runtime();c.Seed.search=()=>({depth:0,score:null,pv:[],nodes:0,limited:true});assert.match(call(c,'review',{fen:initial,moves:[]},'e2e4','incomplete').error,/未计入统计/);});
 test('invalid evidence line rejected instead of silently replaying a prefix',()=>{const c=runtime();c.Seed.search=()=>({depth:3,score:50,pv:['e2e5'],nodes:1,limited:false});assert(call(c,'search',{fen:initial,moves:[]},{},'invalid').error);});
 test('game limit remains 600 plies while independent evidence has a bounded continuation allowance',()=>{const c=runtime();assert.match(game(c,initial,Array(601).fill('e2e4')).error,/600半回合/);assert.match(call(c,'inspect',initial,Array(613).fill('e2e4')).error,/612半回合/);});
+const cacheEntries=moves=>moves.map((move,i)=>({ply:i+1,bestPV:[move],playedPV:[move]}));
+test('cached lines preserve repetition history and reject continuations beyond its draw',()=>{
+ const c=runtime(),moves=['g1f3','g8f6','f3g1','f6g8','g1f3','g8f6','f3g1','f6g8'],entries=cacheEntries(moves);
+ assert.equal(call(c,'validateReview',initial,moves,entries).valid,true);
+ entries[7].bestPV.push('e2e4');assert.match(call(c,'validateReview',initial,moves,entries).error,/终局/);
+});
+test('cached branches restore castling, en passant and promotion state between lines',()=>{
+ for(const [fen,moves] of [[initial,['e2e4','a7a6','e4e5','d7d5','e5d6']],['r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',['e1g1','e8c8']],['7k/P7/8/8/8/8/8/4K3 w - - 0 1',['a7a8n']]]){
+  const c=runtime(),entries=cacheEntries(moves);assert.equal(call(c,'validateReview',fen,moves,entries).valid,true);
+  entries[0].bestPV=['e2e5'];assert.ok(call(c,'validateReview',fen,moves,entries).error);
+ }
+});
+test('cache checks reject partial, wrong-ply, mismatched and unbounded evidence',()=>{
+ const c=runtime(),moves=['e2e4','e7e5'];
+ for(const entries of [[],[{ply:1,bestPV:[],playedPV:['e2e4']},cacheEntries(moves)[1]],[{ply:2,bestPV:['e2e4'],playedPV:['e2e4']},cacheEntries(moves)[1]],[{ply:1,bestPV:['e2e4'],playedPV:['d2d4']},cacheEntries(moves)[1]],[{ply:1,bestPV:Array(13).fill('e2e4'),playedPV:['e2e4']},cacheEntries(moves)[1]]])assert.ok(call(c,'validateReview',initial,moves,entries).error);
+});
+test('leaving a review interrupts cache and board reading, then a new read succeeds',()=>{
+ const c=runtime(),moves=['e2e4','e7e5','g1f3','b8c6'];let checks=0;c.nativeCancelled=()=>++checks>3;
+ assert.match(call(c,'validateReview',initial,moves,cacheEntries(moves)).error,/取消/);
+ c.nativeCancelled=()=>true;assert.match(call(c,'inspect',initial,moves).error,/取消/);
+ c.nativeCancelled=()=>false;assert.equal(call(c,'validateReview',initial,moves,cacheEntries(moves)).valid,true);
+});

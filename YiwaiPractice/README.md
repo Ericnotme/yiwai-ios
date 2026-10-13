@@ -1,6 +1,6 @@
 # 弈外 · iPhone 原生版
 
-SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.3.2（5）** 的应用源码；构建步骤和许可证见仓库根目录的 `BUILDING.md`、`NOTICE.md`、`LICENSE`。复盘在非持久化 WebKit 中离线运行本地 Stockfish WASM。
+SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.3.3（6）** 的应用源码；构建步骤和许可证见仓库根目录的 `BUILDING.md`、`NOTICE.md`、`LICENSE`。复盘在非持久化 WebKit 中离线运行本地 Stockfish WASM。
 
 ## 可以做什么
 
