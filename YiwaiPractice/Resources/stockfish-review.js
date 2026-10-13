@@ -12,23 +12,30 @@ var YiwaiUCI = {
   }
 };
 window.YiwaiStockfish = (() => {
-  let worker, objectURL, pending, readyReject, readyTimer;
+  let worker, objectURL, wasmURL, pending, readyReject, readyTimer;
   const fail = message => { if(readyReject)readyReject(Error(message)); if(pending){clearTimeout(pending.timer);pending.reject(Error(message));pending=null;} };
   function stop() {
     fail('分析已取消，未完成的局面不会计入准确度');
     clearTimeout(readyTimer);readyReject=null;
     worker?.terminate();worker=null;
     if(objectURL)URL.revokeObjectURL(objectURL);objectURL=null;
+    if(wasmURL)URL.revokeObjectURL(wasmURL);wasmURL=null;
   }
   async function initialize(source, wasm) {
     stop();
-    objectURL=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
-    // The engine's supported URL hash selects its WASM. A data URL keeps this offline.
-    worker=new Worker(objectURL+'#'+encodeURIComponent('data:application/wasm;base64,'+wasm));
+    // WebKit rejects URL fragments larger than 2 MiB. The former base64 WASM
+    // fragment was 2,552,627 characters, so newer iPhones rejected the worker
+    // before any code ran. Keep bytes in a local Blob and pass only its short URL.
+    try {
+      const bytes=Uint8Array.from(atob(wasm),c=>c.charCodeAt(0));
+      wasmURL=URL.createObjectURL(new Blob([bytes],{type:'application/wasm'}));
+      objectURL=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+      worker=new Worker(objectURL+'#'+encodeURIComponent(wasmURL));
+    } catch(error) { stop(); throw Error('本地分析资源加载失败，请重试'); }
     await new Promise((resolve,reject)=>{
       readyReject=reject;
       readyTimer=setTimeout(()=>{fail('本地分析引擎启动超时');stop();},45000);
-      worker.onerror=()=>{fail('本地分析引擎未能运行');stop();};
+      worker.onerror=()=>{fail(readyReject?'本地分析引擎启动失败（E_WORKER_START）':'本地分析引擎运行中断（E_WORKER_SEARCH）');stop();};
       worker.onmessage=({data})=>{
         if(typeof data!=='string')return;
         if(data==='uciok'){

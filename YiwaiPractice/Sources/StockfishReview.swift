@@ -61,7 +61,7 @@ struct GameReviewReport: Codable {
             return try String(contentsOf:url,encoding:.utf8)
         }
         let scripts = try [resource("chess","js"),resource("game-review","js"),resource("stockfish-review","js")]
-        let policy = "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src blob:; connect-src data:;"
+        let policy = "default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src blob:; connect-src blob:;"
         let html = "<!doctype html><meta http-equiv='Content-Security-Policy' content=\"\(policy)\"><title>Local chess analysis</title>" + scripts.map { "<script>\($0.replacingOccurrences(of:"</script",with:"<\\/script"))</script>" }.joined()
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void,Error>) in
             loaded = continuation
