@@ -1,0 +1,436 @@
+{
+  "source": "Knight Room public/review.mjs, captured 2026-10-13. Expected values computed by website code, not native implementation.",
+  "cases": [
+    {
+      "name": "opening-errors-and-best",
+      "initialFEN": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "history": [
+        "e2e4",
+        "e7e5",
+        "g1f3",
+        "b8c6",
+        "f1c4",
+        "g8f6"
+      ],
+      "evaluations": [
+        {
+          "cp": 0,
+          "win": 50,
+          "best": "e2e4",
+          "pv": [
+            "e2e4"
+          ],
+          "depth": 12,
+          "nodes": 300,
+          "legalCount": 20,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": 50,
+          "win": 54.5896437602999,
+          "best": "b8c6",
+          "pv": [
+            "b8c6"
+          ],
+          "depth": 13,
+          "nodes": 301,
+          "legalCount": 20,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": 20,
+          "win": 51.84020844121936,
+          "best": "a2a3",
+          "pv": [
+            "a2a3"
+          ],
+          "depth": 14,
+          "nodes": 302,
+          "legalCount": 29,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": 90,
+          "win": 58.20968656397247,
+          "best": "b8c6",
+          "pv": [
+            "b8c6"
+          ],
+          "depth": 15,
+          "nodes": 303,
+          "legalCount": 29,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -170,
+          "win": 34.84286119517737,
+          "best": "f3d4",
+          "pv": [
+            "f3d4"
+          ],
+          "depth": 16,
+          "nodes": 304,
+          "legalCount": 27,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": 120,
+          "win": 60.86996650452809,
+          "best": "a8b8",
+          "pv": [
+            "a8b8"
+          ],
+          "depth": 17,
+          "nodes": 305,
+          "legalCount": 31,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -300,
+          "win": 24.887449906165156,
+          "best": "c4b5",
+          "pv": [
+            "c4b5"
+          ],
+          "depth": 18,
+          "nodes": 306,
+          "legalCount": 33,
+          "terminal": false,
+          "draw": false
+        }
+      ],
+      "expected": {
+        "white": 100,
+        "black": 100,
+        "entries": [
+          {
+            "ply": 1,
+            "color": "w",
+            "san": "e4",
+            "number": 1,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 1.8859301132156487,
+            "category": "best"
+          },
+          {
+            "ply": 2,
+            "color": "b",
+            "san": "e5",
+            "number": 1,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 3.09318309414756,
+            "category": "excellent"
+          },
+          {
+            "ply": 3,
+            "color": "w",
+            "san": "Nf3",
+            "number": 2,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 8.019169847568785,
+            "category": "excellent"
+          },
+          {
+            "ply": 4,
+            "color": "b",
+            "san": "Nc6",
+            "number": 2,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 9.146703020264072,
+            "category": "best"
+          },
+          {
+            "ply": 5,
+            "color": "w",
+            "san": "Bc4",
+            "number": 3,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 12,
+            "category": "excellent"
+          },
+          {
+            "ply": 6,
+            "color": "b",
+            "san": "Nf6",
+            "number": 3,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 12,
+            "category": "excellent"
+          }
+        ]
+      }
+    },
+    {
+      "name": "black-start",
+      "initialFEN": "4k3/8/8/8/8/8/8/R3K3 b Q - 0 12",
+      "history": [
+        "e8f7",
+        "a1a7",
+        "f7f6"
+      ],
+      "evaluations": [
+        {
+          "cp": 0,
+          "win": 50,
+          "best": "e8f7",
+          "pv": [
+            "e8f7"
+          ],
+          "depth": 12,
+          "nodes": 300,
+          "legalCount": 5,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": 600,
+          "win": 90.1076915780842,
+          "best": "a1a2",
+          "pv": [
+            "a1a2"
+          ],
+          "depth": 13,
+          "nodes": 301,
+          "legalCount": 16,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": 100,
+          "win": 59.102589719161294,
+          "best": "f7e8",
+          "pv": [
+            "f7e8"
+          ],
+          "depth": 14,
+          "nodes": 302,
+          "legalCount": 6,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -350,
+          "win": 21.60681878351644,
+          "best": "a7a8",
+          "pv": [
+            "a7a8"
+          ],
+          "depth": 15,
+          "nodes": 303,
+          "legalCount": 19,
+          "terminal": false,
+          "draw": false
+        }
+      ],
+      "expected": {
+        "white": 23.579100841822495,
+        "black": 100,
+        "entries": [
+          {
+            "ply": 1,
+            "color": "b",
+            "san": "Kf7",
+            "number": 12,
+            "loss": 0,
+            "rawLoss": 40.1076915780842,
+            "accuracy": 100,
+            "weight": 12,
+            "category": "best"
+          },
+          {
+            "ply": 2,
+            "color": "w",
+            "san": "Ra7+",
+            "number": 13,
+            "loss": 31.005101858922906,
+            "rawLoss": 31.005101858922906,
+            "accuracy": 23.579100841822495,
+            "weight": 12,
+            "category": "blunder"
+          },
+          {
+            "ply": 3,
+            "color": "b",
+            "san": "Kf6",
+            "number": 13,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 12,
+            "category": "excellent"
+          }
+        ]
+      }
+    },
+    {
+      "name": "mate",
+      "initialFEN": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "history": [
+        "f2f3",
+        "e7e5",
+        "g2g4",
+        "d8h4"
+      ],
+      "evaluations": [
+        {
+          "cp": 0,
+          "win": 50,
+          "best": "f2f3",
+          "pv": [
+            "f2f3"
+          ],
+          "depth": 12,
+          "nodes": 300,
+          "legalCount": 20,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -120,
+          "win": 39.13003349547192,
+          "best": "b8c6",
+          "pv": [
+            "b8c6"
+          ],
+          "depth": 13,
+          "nodes": 301,
+          "legalCount": 20,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -30,
+          "win": 47.24124461074959,
+          "best": "f3f4",
+          "pv": [
+            "f3f4"
+          ],
+          "depth": 14,
+          "nodes": 302,
+          "legalCount": 19,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -10000,
+          "win": 1.0207743315884345e-14,
+          "best": "d8h4",
+          "pv": [
+            "d8h4"
+          ],
+          "depth": 15,
+          "nodes": 303,
+          "legalCount": 30,
+          "terminal": false,
+          "draw": false
+        },
+        {
+          "cp": -10000,
+          "win": 0,
+          "best": null,
+          "pv": [],
+          "depth": 0,
+          "nodes": 304,
+          "legalCount": 0,
+          "terminal": true,
+          "draw": false,
+          "mate": 0,
+          "winner": "b"
+        }
+      ],
+      "expected": {
+        "white": 26.614701148694117,
+        "black": 83.26064410441919,
+        "entries": [
+          {
+            "ply": 1,
+            "color": "w",
+            "san": "f3",
+            "number": 1,
+            "loss": 0,
+            "rawLoss": 10.86996650452808,
+            "accuracy": 100,
+            "weight": 4.613490470154826,
+            "category": "best"
+          },
+          {
+            "ply": 2,
+            "color": "b",
+            "san": "e5",
+            "number": 1,
+            "loss": 8.11121111527767,
+            "rawLoss": 8.11121111527767,
+            "accuracy": 69.30398999376791,
+            "weight": 12,
+            "category": "inaccuracy"
+          },
+          {
+            "ply": 3,
+            "color": "w",
+            "san": "g4",
+            "number": 2,
+            "loss": 47.24124461074958,
+            "rawLoss": 47.24124461074958,
+            "accuracy": 10.02315722865285,
+            "weight": 12,
+            "category": "blunder"
+          },
+          {
+            "ply": 4,
+            "color": "b",
+            "san": "Qh4#",
+            "number": 2,
+            "loss": 0,
+            "rawLoss": 0,
+            "accuracy": 100,
+            "weight": 12,
+            "category": "best"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no-moves",
+      "initialFEN": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "history": [],
+      "evaluations": [
+        {
+          "cp": 0,
+          "win": 50,
+          "best": "a2a3",
+          "pv": [
+            "a2a3"
+          ],
+          "depth": 12,
+          "nodes": 300,
+          "legalCount": 20,
+          "terminal": false,
+          "draw": false
+        }
+      ],
+      "expected": {
+        "white": null,
+        "black": null,
+        "entries": []
+      }
+    }
+  ]
+}

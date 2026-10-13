@@ -1,0 +1,10 @@
+Stockfish.js 19.0.0, unmodified browser builds from npm stockfish@19.0.0.
+Upstream: https://github.com/nmrugg/stockfish.js
+Source commit: 54fde71d90c7c403964f6cacef48f7bbec495df1
+Corresponding source and build scripts: stockfish19-source.tar.gz
+License: stockfish19-LICENSE.txt (GPL-3.0)
+The full single-threaded WASM is split into sf19-full-part-00 through -06.
+/api/engine-full.wasm streams these unchanged chunks in numeric order.
+Lite single-threaded is the default. Full single-threaded uses the full NNUE network.
+Both searches run in the visitor's browser, not in a hosted Worker.
+Full WASM SHA-256: 8725c26572762617fd96b2ea83ff130e6640b85815890d682bf8c49db0820721

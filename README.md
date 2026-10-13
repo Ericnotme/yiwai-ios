@@ -1,2 +1,25 @@
-# yiwai-ios
-弈外 iPhone app — corresponding source for 0.3.0 (3), offline chess and Stockfish review.
+# 弈外 · iPhone 原生版
+
+离线人机对弈、棋题、棋谱回放和中文复盘。此仓库提供 **0.3.0（3）** 的完整应用源码、适配层、资源、测试、Stockfish 对应源码与构建材料。
+
+**源码公开不表示 TestFlight 已发布。** 本版已完成本地测试和签名归档；上传、Apple 处理、外测审核及安装是独立阶段。
+
+- 对弈：原创 Seed 0.2，棋力未评级。
+- 复盘：未修改的 Stockfish.js 19.0.0 lite single，在本地 WebKit Worker 中运行。
+- 教练：依据合法变化线与棋规生成中文解释，不是大模型对话。
+- 准确度：沿用弈外网站的计算口径，不声称与 Lichess/Chess.com 完全一致；限时搜索会受设备影响。
+- 数据：棋局和笔记只保存在本机，没有账号、云端 API 或分析上传。
+
+## 构建、许可和核验
+
+见 [BUILDING.md](BUILDING.md)、[NOTICE.md](NOTICE.md) 和 [release-manifest.json](release-manifest.json)。应用位于 [YiwaiPractice](YiwaiPractice/)。清单包含版本、所有应用编译输入的 SHA-256，以及与已归档资源一致的哈希。
+
+原创应用代码、适配代码、教学内容、图标及本仓库构建辅助材料由项目权利人授权，采用 **GNU GPL v3 或更新版本**，全文见 [LICENSE](LICENSE)。第三方代码和网络保留原许可、版权及免责声明，详见 NOTICE。软件按现状提供，不提供任何担保。
+
+本仓库不包含 Apple 账号、密码、证书、私钥、描述文件、个人棋谱或原工作目录的 Git 历史。上游作者公开的版权和联系信息保留在其许可及源码内。
+
+## 本版验证
+
+已通过 24 项 JavaScript 棋规、分析与解释测试，19 项原生单元测试和 7 项模拟器 UI 流程。最大辅助字号流程曾发现无障碍标识被父容器覆盖，修正后通过。最后的将死解释和证据长度边界调整另由 JavaScript 测试覆盖。
+
+模拟器及本地签名验证不代表已在 iPhone 安装。本仓库没有发布签名安装包，也不提供个人签名资料。
