@@ -1,6 +1,6 @@
 # 弈外 iPhone App 隐私说明
 
-适用版本：0.3.3（6）。更新日期：2026-10-13。
+适用版本：0.3.3（6）及 0.3.4（7）。更新日期：2026-10-14。
 
 弈外提供离线人机对弈、棋题和棋谱复盘，无须注册或登录。App 本身不接入广告、统计 SDK、云同步或远程分析服务，不向开发者服务器发送棋谱、笔记或分析内容。Stockfish 复盘和 Seed 对弈均在设备本地运行。
 
@@ -10,4 +10,4 @@
 
 通过 TestFlight 测试时，Apple 会自动收集崩溃日志和使用情况，并提供给开发者；你主动提交的测试反馈也会按 TestFlight 的规则提供给开发者。这些测试平台资料与 App 自身的离线处理不同。详情以 Apple 的 TestFlight 隐私说明和安装时展示的条款为准：https://www.apple.com/legal/privacy/data/en/test-flight/ 。向开发者主动提交截图或反馈也可能包含你自行提供的信息。
 
-App 不要求通讯录、位置、相机、麦克风或照片库读取权限。开发者不出售用户数据。用户可通过 TestFlight 的反馈入口联系开发者；源码相关公开问题可提交至 https://github.com/Ericnotme/yiwai-ios/issues 。请勿在公开 issue 中发送私人资料。
+App 不要求通讯录、位置、相机、麦克风或照片库读取权限。开发者不出售用户数据。支持与公开问题可提交至 https://github.com/Ericnotme/yiwai-ios/issues 。测试用户也可使用 TestFlight 反馈入口。在线隐私政策和支持入口会打开 GitHub，访问时适用该网站的隐私规则。请勿在公开 issue 中发送私人资料。

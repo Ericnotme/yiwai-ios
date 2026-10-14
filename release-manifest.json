@@ -1,6 +1,6 @@
 {
-  "version": "0.3.3",
-  "build": "6",
+  "version": "0.3.4",
+  "build": "7",
   "bundle": "chat.weijiaxian.yiwai.practice",
   "sourceAndArchiveResourceHashes": {
     "chess.js": "fc8fcc8e050c50431ff127f2e67aa104752c389c3b4930ce0454fdaca1b2926a",
@@ -11,9 +11,10 @@
     "Stockfish/stockfish-19-lite-single.js": "d3344124ab067fb0b90ee77873bb8e9fbf5fc01bc525fe714b0f942581e889e6",
     "Stockfish/stockfish-19-lite-single.wasm": "57ac2d72312aba346760e3f173f687a8c211208e97a87268436f7f0e10bb5387",
     "Stockfish/stockfish19-source.tar.gz": "ff4955eb2b2c6e49152dee875b28794be58cf52a8f019bcb230251207dbdce09",
-    "Stockfish/stockfish19-LICENSE.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b"
+    "Stockfish/stockfish19-LICENSE.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
+    "PrivacyPolicy.txt": "477d1d7246538dfeaae77bef444a8a70b8ceb84862ebfe7e2ff42f26cd3dbf7e"
   },
-  "sourceVersion": "0.3.3 (6)",
+  "sourceVersion": "0.3.4 (7)",
   "upstreamStockfishCommit": "54fde71d90c7c403964f6cacef48f7bbec495df1",
   "upstreamStockfishModification": "None. Bundled lite single JS and WASM are unchanged.",
   "sourceOnlyAdditions": [
@@ -21,11 +22,13 @@
     "NNUE network and rebuild helper",
     "release manifests"
   ],
-  "reproducibility": "Application sources/resources match the local signed archive. Upstream WASM was not rebuilt for this source release; bit-for-bit compiler reproducibility is not claimed.",
+  "reproducibility": "Application resources verified against the local signed 0.3.4 (7) archive. Upstream WASM was not rebuilt; bit-for-bit compiler reproducibility is not claimed.",
   "sourceFileHashes": {
+    "README.md": "a1e693a91b255e43c02256e4522816c316b3bf5f9f47a9a714ea1fca908d226d",
     "Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png": "8dc1c8e9b04a0cf92619035934bc43ff34e1b588c91a77bcef84fdb3c909131a",
     "Resources/Assets.xcassets/AppIcon.appiconset/Contents.json": "9239900ca4c37dc860feb154216409f05d906e26f2d79550e1e8e8b8db6324c7",
     "Resources/Assets.xcassets/Contents.json": "81c54324c918dd55789178a4a2d951210270d905af16c1428f6192d454f76c8f",
+    "Resources/PrivacyPolicy.txt": "477d1d7246538dfeaae77bef444a8a70b8ceb84862ebfe7e2ff42f26cd3dbf7e",
     "Resources/Stockfish/stockfish-19-lite-single.js": "d3344124ab067fb0b90ee77873bb8e9fbf5fc01bc525fe714b0f942581e889e6",
     "Resources/Stockfish/stockfish-19-lite-single.wasm": "57ac2d72312aba346760e3f173f687a8c211208e97a87268436f7f0e10bb5387",
     "Resources/Stockfish/stockfish19-LICENSE.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
@@ -45,18 +48,18 @@
     "Sources/Lessons.swift": "db0b4c1ce7585c39fe322b69e7ba4d460d1e8131e877f7320711a42235302b92",
     "Sources/Notebook.swift": "984dea3d50f86f1b11339adaba97b5502c32b339d8f27f8372e06cc3ffb345fd",
     "Sources/StockfishReview.swift": "4c7742c1d5313aadb88f6442a23588e590aa9a4c478f31910d5ccf9bfc9bb761",
-    "Sources/YiwaiApp.swift": "a6004bd6e7a50d04bfa9dc303827072616a783ab2783d24fe67e5435dd1b24c0",
+    "Sources/YiwaiApp.swift": "5165c314e6fcc3d5377cd09006f33abbbff4cd0c766756693c6d9740e02519fe",
     "Tests/Fixtures/website-accuracy.json": "20a693c7e4ce10f1bf62c8ec17f300aa60984cb22733bfaeb2b5c15c33e2d85d",
     "Tests/GameTests.swift": "29a92cd987c05ad8204cb741ceb69d5aa5dde6818d8535f7d673311da2e8b834",
     "Tests/ReviewCacheTests.swift": "2ce9c6c1ab01c75f6a27aa42bcff8d2afd16d8078b48b100abdf9df72e45cb9e",
     "Tests/StockfishTests.swift": "fb4ee57de9c769dd1bd15b1a9e1c937aba2434795d13c5e52e1bdbecd8b0e2d0",
     "Tests/YiwaiTests.swift": "11cf2325136b95b350cdb3910dec50b2fc139438407cfda8038c54afa5ae39a7",
     "UITests/GameUITests.swift": "823562ece5de8b0d9e6c1abbf7e2e6c666915dc155490916dff8ecc8b5e6d1a9",
-    "UITests/YiwaiUITests.swift": "24f7875dd383f92f57cfd58b78269821eabbb13bb99f505738d1d1b68972de52",
-    "YiwaiPractice.xcodeproj/project.pbxproj": "278771ea7f99040899c170d433d79ded54e90dca03045dae8f88317ad8c689e7",
+    "UITests/YiwaiUITests.swift": "e98c6ae9f22e6b29e73aee2689b0f2925399b20cf0eda8751ef2e7727cfa1085",
+    "YiwaiPractice.xcodeproj/project.pbxproj": "47fe71c27ebb7f2c512bf2f9fcfa4c4a40846650435a2ac68c1ce31117eeae2e",
     "YiwaiPractice.xcodeproj/xcshareddata/xcschemes/YiwaiPractice.xcscheme": "e98fa446a922c2b6bdd0a4a0347f627ba250872161ef3b5e523f9df3f3895f52",
     "scripts/engine-tests.cjs": "d2912ac476937283920d85d32932d91494fe874a2e589e419cd0189990783595",
-    "scripts/generate-project.py": "35c4df443b857f6373656436d5e1ff4f55f48e1429788e8701dc413cb915f35a",
+    "scripts/generate-project.py": "e828fcee1e54149c26e08c1b772f7afd109dd0bd438515c7593fbee6a7841d9d",
     "scripts/review-tests.cjs": "6ccd37ab33eae31ef2445868143a532c1acd4c7bf8192f5fe90ee87c4fa331f1",
     "scripts/stockfish-transport-tests.cjs": "ae257fc0cf784a3f6a2865c87cd88fbdd2e6059a56cf79d1d8b4b45ac6006288",
     "scripts/test.sh": "9042f06cbfd34de0e3f90d95471ddcacd22bcb240c258ba811747381a98d305a"
@@ -65,5 +68,7 @@
     "file": "vendor/stockfish/nn-61e7af4bb97d.nnue",
     "sha256": "61e7af4bb97d51eeeb25d322916f86513b5cd3a827ce189c98c6e31946f99e5b",
     "upstreamUrl": "https://tests.stockfishchess.org/api/nn/nn-61e7af4bb97d.nnue"
-  }
+  },
+  "baseCommit": "b2acef122c79e882318e59be3e7a5a6869a4c9a6",
+  "releaseStatus": "Local signed App Store candidate; upload and review not yet confirmed."
 }

@@ -64,6 +64,13 @@ final class YiwaiUITests: XCTestCase {
         app.buttons["answerNotMate"].tap()
         XCTAssertEqual(app.staticTexts["answerResult"].label,"判断正确")
         app.tabBars.buttons["关于"].tap()
+        let privacy = app.buttons["privacyPolicy"]
+        reveal(privacy); privacy.tap()
+        XCTAssertTrue(app.navigationBars["隐私政策"].waitForExistence(timeout:5))
+        let content = app.staticTexts["privacyPolicyContent"]
+        XCTAssertTrue(content.label.contains("不向开发者服务器发送棋谱"))
+        capture("release-privacy-policy")
+        app.navigationBars.buttons.element(boundBy:0).tap()
         let license = app.buttons["查看 chess.js BSD-2-Clause 许可"]
         reveal(license); license.tap()
         XCTAssertTrue(app.navigationBars["第三方许可"].waitForExistence(timeout:5))

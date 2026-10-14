@@ -257,9 +257,9 @@ struct AboutView: View {
             List {
                 Section {
                     VStack(alignment:.leading,spacing:12) {
-                        Text("弈外 · 练习版").font(.title2.weight(.semibold))
+                        Text("弈外").font(.title2.weight(.semibold))
                         Text("不急着多走一步。\n先把这一步的道理看清。").font(.body).lineSpacing(5)
-                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 原生 iPhone 试用版").font(.caption).foregroundStyle(.secondary)
+                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 原生 iPhone 版").font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical,14)
                 }
                 Section("本版能做什么") {
@@ -273,6 +273,12 @@ struct AboutView: View {
                     Text("练习、棋规和记录均离线运行，无账号、无广告、无分析追踪。不会申请通知权限。")
                     Text("支持本机棋局 PGN 导出。PGN 导入、在线对战和跨设备同步尚未加入。")
                 }.font(.subheadline)
+                Section("隐私与支持") {
+                    NavigationLink("隐私政策") { PrivacyPolicyView() }.accessibilityIdentifier("privacyPolicy")
+                    Link("支持与问题反馈",destination:URL(string:"https://github.com/Ericnotme/yiwai-ios/issues")!)
+                    Text("隐私政策可离线阅读。在线反馈会打开 GitHub，请勿在公开问题中提供私人资料。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 Section("内容与许可") {
                     Text("局面与讲解改编自弈外 / Knight Room 的原创练习。棋规使用 chess.js 1.4.0；对弈电脑为 Seed 0.2，未评级；复盘使用 Stockfish.js 19 lite。教练依据棋规和引擎讲解，不是大模型。原生页面参考 Lichess 的棋盘与操作布局，保留弈外设计；未复制其代码或图标。")
                     Button("查看 chess.js BSD-2-Clause 许可") { openLicense("chess-LICENSE") }
@@ -288,5 +294,20 @@ struct AboutView: View {
     private func openLicense(_ name: String,directory: String? = nil) {
         licenseText = Bundle.main.url(forResource:name,withExtension:"txt",subdirectory:directory).flatMap { try? String(contentsOf:$0,encoding:.utf8) } ?? "许可文件不可读"
         showLicense = true
+    }
+}
+
+struct PrivacyPolicyView: View {
+    private var policy: String {
+        Bundle.main.url(forResource:"PrivacyPolicy",withExtension:"txt")
+            .flatMap { try? String(contentsOf:$0,encoding:.utf8) } ?? "隐私政策文件暂时不可读，请通过下方在线入口查看。"
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment:.leading,spacing:20) {
+                Text(policy).font(.body).textSelection(.enabled).accessibilityIdentifier("privacyPolicyContent")
+                Link("查看在线隐私政策",destination:URL(string:"https://github.com/Ericnotme/yiwai-ios/blob/main/PRIVACY.md")!)
+            }.padding()
+        }.background(Palette.paper).navigationTitle("隐私政策").navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -22,7 +22,7 @@ def configs(name,settings):
     return obj(name+'configs','XCConfigurationList',buildConfigurations=ids,defaultConfigurationIsVisible=0,defaultConfigurationName='Release')
 
 sourceFiles = [ref(str(p.relative_to(root)),'sourcecode.swift') for p in sorted((root/'Sources').glob('*.swift'))]
-resources = [ref('Resources/'+p, 'sourcecode.javascript' if p.endswith('.js') else 'text') for p in ['chess.js','chess-bridge.js','seed-engine.js','game-review.js','stockfish-review.js','chess-LICENSE.txt']]
+resources = [ref('Resources/'+p, 'sourcecode.javascript' if p.endswith('.js') else 'text') for p in ['chess.js','chess-bridge.js','seed-engine.js','game-review.js','stockfish-review.js','chess-LICENSE.txt','PrivacyPolicy.txt']]
 resources.append(ref('Resources/Stockfish','folder'))
 assets=root/'Resources/Assets.xcassets/AppIcon.appiconset'; assets.mkdir(parents=True,exist_ok=True)
 (assets/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}},indent=2))
@@ -38,7 +38,7 @@ uiProduct=obj('ui-product','PBXFileReference',explicitFileType='wrapper.cfbundle
 products=obj('products','PBXGroup',children=[appProduct,unitProduct,uiProduct],name='Products',sourceTree='<group>')
 main=obj('main','PBXGroup',children=sourceFiles+resources+unitFiles+uiFiles+[products],sourceTree='<group>')
 projectConfig=configs('project',{'SDKROOT':'iphoneos','IPHONEOS_DEPLOYMENT_TARGET':'17.0','SWIFT_VERSION':'5.0','CLANG_ENABLE_MODULES':'YES','TARGETED_DEVICE_FAMILY':'1','CODE_SIGN_STYLE':'Manual','CODE_SIGNING_ALLOWED':'NO','ENABLE_USER_SCRIPT_SANDBOXING':'YES'})
-base={'GENERATE_INFOPLIST_FILE':'YES','PRODUCT_NAME':'$(TARGET_NAME)','CURRENT_PROJECT_VERSION':'6','MARKETING_VERSION':'0.3.3'}
+base={'GENERATE_INFOPLIST_FILE':'YES','PRODUCT_NAME':'$(TARGET_NAME)','CURRENT_PROJECT_VERSION':'7','MARKETING_VERSION':'0.3.4'}
 appConfig=configs('app',dict(base,PRODUCT_BUNDLE_IDENTIFIER='chat.weijiaxian.yiwai.practice',INFOPLIST_KEY_ITSAppUsesNonExemptEncryption='NO',INFOPLIST_KEY_CFBundleDisplayName='弈外练习',INFOPLIST_KEY_LSApplicationCategoryType='public.app-category.education',INFOPLIST_KEY_UILaunchScreen_Generation='YES',INFOPLIST_KEY_UIApplicationSceneManifest_Generation='YES',INFOPLIST_KEY_UISupportedInterfaceOrientations='UIInterfaceOrientationPortrait',ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks'))
 app=obj('app','PBXNativeTarget',buildConfigurationList=appConfig,buildPhases=[phase('app-src','PBXSourcesBuildPhase',[build(f,'app') for f in sourceFiles]),phase('app-fw','PBXFrameworksBuildPhase',[]),phase('app-res','PBXResourcesBuildPhase',[build(f,'res') for f in resources])],buildRules=[],dependencies=[],name='YiwaiPractice',productName='YiwaiPractice',productReference=appProduct,productType='com.apple.product-type.application')
 def testTarget(name,files,product,settings,kind):
