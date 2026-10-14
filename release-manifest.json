@@ -70,5 +70,5 @@
     "upstreamUrl": "https://tests.stockfishchess.org/api/nn/nn-61e7af4bb97d.nnue"
   },
   "baseCommit": "b2acef122c79e882318e59be3e7a5a6869a4c9a6",
-  "releaseStatus": "Local signed App Store candidate; upload and review not yet confirmed."
+  "releaseStatus": "Uploaded to App Store Connect on 2026-10-14; upload succeeded and Apple processing started. Processing completion and formal App Review submission are not yet confirmed."
 }
