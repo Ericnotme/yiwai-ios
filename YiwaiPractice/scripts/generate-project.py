@@ -22,8 +22,11 @@ def configs(name,settings):
     return obj(name+'configs','XCConfigurationList',buildConfigurations=ids,defaultConfigurationIsVisible=0,defaultConfigurationName='Release')
 
 sourceFiles = [ref(str(p.relative_to(root)),'sourcecode.swift') for p in sorted((root/'Sources').glob('*.swift'))]
-resources = [ref('Resources/'+p, 'sourcecode.javascript' if p.endswith('.js') else 'text') for p in ['chess.js','chess-bridge.js','seed-engine.js','game-review.js','stockfish-review.js','chess-LICENSE.txt','PrivacyPolicy.txt']]
+resources = [ref('Resources/'+p, 'sourcecode.javascript' if p.endswith('.js') else 'text') for p in ['chess.js','position-import.js','chess-bridge.js','seed-engine.js','game-review.js','stockfish-review.js','chess-LICENSE.txt','PrivacyPolicy.txt','reforge-puzzles.json']]
 resources.append(ref('Resources/Stockfish','folder'))
+# Localized launcher display names; product and bundle identities stay stable.
+for language in ['en','zh-Hans','zh-Hant']:
+    resources.append(ref('Resources/'+language+'.lproj','folder'))
 assets=root/'Resources/Assets.xcassets/AppIcon.appiconset'; assets.mkdir(parents=True,exist_ok=True)
 (assets/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}},indent=2))
 import shutil
@@ -38,7 +41,7 @@ uiProduct=obj('ui-product','PBXFileReference',explicitFileType='wrapper.cfbundle
 products=obj('products','PBXGroup',children=[appProduct,unitProduct,uiProduct],name='Products',sourceTree='<group>')
 main=obj('main','PBXGroup',children=sourceFiles+resources+unitFiles+uiFiles+[products],sourceTree='<group>')
 projectConfig=configs('project',{'SDKROOT':'iphoneos','IPHONEOS_DEPLOYMENT_TARGET':'17.0','SWIFT_VERSION':'5.0','CLANG_ENABLE_MODULES':'YES','TARGETED_DEVICE_FAMILY':'1','CODE_SIGN_STYLE':'Manual','CODE_SIGNING_ALLOWED':'NO','ENABLE_USER_SCRIPT_SANDBOXING':'YES'})
-base={'GENERATE_INFOPLIST_FILE':'YES','PRODUCT_NAME':'$(TARGET_NAME)','CURRENT_PROJECT_VERSION':'7','MARKETING_VERSION':'0.3.4'}
+base={'GENERATE_INFOPLIST_FILE':'YES','PRODUCT_NAME':'$(TARGET_NAME)','CURRENT_PROJECT_VERSION':'10','MARKETING_VERSION':'0.4.0'}
 appConfig=configs('app',dict(base,PRODUCT_BUNDLE_IDENTIFIER='chat.weijiaxian.yiwai.practice',INFOPLIST_KEY_ITSAppUsesNonExemptEncryption='NO',INFOPLIST_KEY_CFBundleDisplayName='弈外练习',INFOPLIST_KEY_LSApplicationCategoryType='public.app-category.education',INFOPLIST_KEY_UILaunchScreen_Generation='YES',INFOPLIST_KEY_UIApplicationSceneManifest_Generation='YES',INFOPLIST_KEY_UISupportedInterfaceOrientations='UIInterfaceOrientationPortrait',ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks'))
 app=obj('app','PBXNativeTarget',buildConfigurationList=appConfig,buildPhases=[phase('app-src','PBXSourcesBuildPhase',[build(f,'app') for f in sourceFiles]),phase('app-fw','PBXFrameworksBuildPhase',[]),phase('app-res','PBXResourcesBuildPhase',[build(f,'res') for f in resources])],buildRules=[],dependencies=[],name='YiwaiPractice',productName='YiwaiPractice',productReference=appProduct,productType='com.apple.product-type.application')
 def testTarget(name,files,product,settings,kind):
@@ -46,7 +49,7 @@ def testTarget(name,files,product,settings,kind):
     return obj(name,'PBXNativeTarget',buildConfigurationList=configs(name,dict(base,**settings)),buildPhases=[phase(name+'src','PBXSourcesBuildPhase',[build(f,name) for f in files]),phase(name+'fw','PBXFrameworksBuildPhase',[])],buildRules=[],dependencies=[dep],name=name,productName=name,productReference=product,productType=kind)
 unit=testTarget('YiwaiTests',unitFiles,unitProduct,{'PRODUCT_BUNDLE_IDENTIFIER':'chat.weijiaxian.yiwai.tests','TEST_HOST':'$(BUILT_PRODUCTS_DIR)/YiwaiPractice.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/YiwaiPractice','BUNDLE_LOADER':'$(TEST_HOST)'},'com.apple.product-type.bundle.unit-test')
 ui=testTarget('YiwaiUITests',uiFiles,uiProduct,{'PRODUCT_BUNDLE_IDENTIFIER':'chat.weijiaxian.yiwai.uitests','TEST_TARGET_NAME':'YiwaiPractice'},'com.apple.product-type.bundle.ui-testing')
-project=obj('project','PBXProject',attributes={'BuildIndependentTargetsInParallel':'YES','LastUpgradeCheck':'2610','TargetAttributes':{app:{'CreatedOnToolsVersion':'26.1'},unit:{'CreatedOnToolsVersion':'26.1','TestTargetID':app},ui:{'CreatedOnToolsVersion':'26.1','TestTargetID':app}}},buildConfigurationList=projectConfig,compatibilityVersion='Xcode 14.0',developmentRegion='zh-Hans',hasScannedForEncodings=0,knownRegions=['zh-Hans','en','Base'],mainGroup=main,productRefGroup=products,projectDirPath='',projectRoot='',targets=[app,unit,ui])
+project=obj('project','PBXProject',attributes={'BuildIndependentTargetsInParallel':'YES','LastUpgradeCheck':'2610','TargetAttributes':{app:{'CreatedOnToolsVersion':'26.1'},unit:{'CreatedOnToolsVersion':'26.1','TestTargetID':app},ui:{'CreatedOnToolsVersion':'26.1','TestTargetID':app}}},buildConfigurationList=projectConfig,compatibilityVersion='Xcode 14.0',developmentRegion='zh-Hans',hasScannedForEncodings=0,knownRegions=['zh-Hans','zh-Hant','en','Base'],mainGroup=main,productRefGroup=products,projectDirPath='',projectRoot='',targets=[app,unit,ui])
 def serialize(value):
     if isinstance(value,dict): return '{\n'+''.join(json.dumps(str(k))+ ' = '+serialize(v)+';\n' for k,v in value.items())+'}'
     if isinstance(value,list): return '('+','.join(serialize(v) for v in value)+')'

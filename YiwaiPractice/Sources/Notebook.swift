@@ -23,6 +23,10 @@ struct ReviewEntry: Codable, Identifiable {
         } catch { readFailed = true; errorMessage = "错题本暂时无法读取，原文件已保留。请保留 App 数据后再排查。" }
     }
     func contains(_ id: String) -> Bool { entries.contains { $0.id == id } }
+    func capsuleEntries() throws -> [ReviewEntry] {
+        guard !readFailed else { throw ChessFailure.invalid("错题本原文件无法读取，不能生成完整导出。原文件已保留。") }
+        return entries
+    }
     func record(_ id: String, correct: Bool) {
         if let i = entries.firstIndex(where:{$0.id == id}) {
             entries[i].attempts += 1

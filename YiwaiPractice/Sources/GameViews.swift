@@ -53,6 +53,8 @@ struct GameBoard: View {
 
 struct GamePlayView: View {
     @EnvironmentObject var game: GameController
+    @EnvironmentObject private var decisions: DecisionStore
+    @State private var decisionCapture: DecisionCapture?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var setup = false
@@ -70,6 +72,10 @@ struct GamePlayView: View {
                         GameBoard(frame:state.frame,flipped:record.human == "b",selected:game.selected,targets:game.targets,enabled:game.canMove,tap:game.tap,drag:{ from,to in game.selected = nil; game.tap(from); game.tap(to) })
                         playerBar("你",subtitle:record.human == "w" ? "执白" : "执黑",color:record.human,active:game.canMove)
                         Text("\(record.moves.count) 半回合").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("plyCount")
+                        if game.canMove && decisions.canRecord(gameID:record.id) && !decisions.data.notes.contains(where:{$0.gameID == record.id && $0.ply == record.moves.count}) {
+                            Button("记下此刻的候选着与理由（可跳过）") { game.pause(); decisionCapture = DecisionCapture(record:record,ply:record.moves.count,origin:.beforeMove) }
+                                .font(.subheadline).frame(minHeight:44).accessibilityIdentifier("captureLiveDecision")
+                        }
                         HStack(spacing:8) { if game.thinking { ProgressView() }; Text(game.status).font(.subheadline.weight(.medium)).fixedSize(horizontal:false,vertical:true).accessibilityIdentifier("gameStatus") }.frame(minHeight:40,alignment:.leading)
                         rowLayout {
                             Button { game.undo() } label: { Label("悔棋",systemImage:"arrow.uturn.backward") }.disabled(!game.canUndo).accessibilityIdentifier("undoGame")
@@ -111,6 +117,7 @@ struct GamePlayView: View {
             }
             .confirmationDialog("确认认输？棋局会保留供复盘。",isPresented:$resign,titleVisibility:.visible) { Button("认输",role:.destructive) { game.finish(resign:true) } }
             .sheet(item:$review) { record in NavigationStack { GameReviewView(record:record).toolbar { Button("完成") { review = nil } } } }
+            .sheet(item:$decisionCapture) { DecisionCaptureView(capture:$0) }
             .onChange(of:scenePhase) { _, phase in if phase != .active { game.pause() } }
             .onDisappear { game.pause() }
         }
@@ -126,11 +133,23 @@ struct GamePlayView: View {
 }
 
 struct GameHistoryView: View {
+    @State private var importing = false
     @EnvironmentObject var game: GameController
     let resume: (UUID) -> Void
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    NavigationLink { TimeCapsuleView() } label: {
+                        Label("时间胶囊 · 备注与完整导出",systemImage:"archivebox")
+                    }.accessibilityIdentifier("openTimeCapsule")
+                    NavigationLink { LearningPatternView() } label: {
+                        Label("从我的棋谱找练习",systemImage:"magnifyingglass")
+                    }.accessibilityIdentifier("openLearningPattern")
+                    NavigationLink { DecisionListView() } label: {
+                        Label("决策回炉 · 到期复习",systemImage:"arrow.clockwise")
+                    }.accessibilityIdentifier("openDecisionReforge")
+                }
                 if game.records.isEmpty { ContentUnavailableView("你的棋局会留在这里",systemImage:"books.vertical",description:Text("先和电脑下一盘。每一步自动保存，支持完整回放与 PGN 导出。")) }
                 ForEach(game.records) { record in
                     VStack(alignment:.leading,spacing:10) {
@@ -141,7 +160,7 @@ struct GameHistoryView: View {
                                 Text(record.ending == "resigned" ? "已认输 · 查看复盘" : "逐步回放 · AI Coach").font(.subheadline)
                             }.padding(.vertical,5)
                         }.accessibilityIdentifier("record-\(record.id.uuidString)")
-                        if record.ending != "resigned" {
+                        if record.ending != "resigned" && record.source == nil {
                             Button("继续这盘棋") { resume(record.id) }
                                 .buttonStyle(.borderless).font(.subheadline).frame(minHeight:44)
                                 .accessibilityIdentifier("resume-record-\(record.id.uuidString)")
@@ -149,6 +168,8 @@ struct GameHistoryView: View {
                     }
                 }
             }.scrollContentBackground(.hidden).background(Palette.paper).navigationTitle("棋谱")
+            .toolbar { Button("导入 FEN / PGN") { importing = true }.accessibilityIdentifier("importPosition") }
+            .sheet(isPresented:$importing) { PositionImportView() }
         }
     }
 }
@@ -212,7 +233,7 @@ struct GameHistoryView: View {
         task?.cancel(); task = nil; engine?.cancel(); engine = nil; requestID = UUID(); running = false; completed = 0
     }
     func analyze(save: @escaping @MainActor (GameReviewReport) -> Void) {
-        guard !loading, !running, !frames.isEmpty, !record.moves.isEmpty else { return }
+        guard !loading, !running, !frames.isEmpty else { return }
         let id = UUID(); requestID = id; running = true; completed = 0; failures = [:]; error = nil
         let worker = StockfishReviewEngine(); engine = worker
         worker.onProgress = { [weak self] completed,_ in
@@ -240,12 +261,16 @@ struct EvidenceReplay: Identifiable {
 struct GameReviewView: View {
     let record: GameRecord
     @EnvironmentObject var game: GameController
+    @EnvironmentObject private var decisions: DecisionStore
+    @State private var decisionCapture: DecisionCapture?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var textSize
     @StateObject private var model: ReviewController
     @State private var ply = 0
     @State private var plotPly: Int?
     @State private var evidence: EvidenceReplay?
+    @State private var editingNote = false
+    private var currentNote: String { game.records.first(where:{$0.id == record.id})?.personalNote ?? "" }
     private var rowLayout: AnyLayout { textSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment:.leading,spacing:12)) : AnyLayout(HStackLayout(alignment:.top,spacing:8)) }
     init(record: GameRecord) { self.record = record; _model = StateObject(wrappedValue:ReviewController(record:record)) }
     var body: some View {
@@ -256,11 +281,19 @@ struct GameReviewView: View {
                     Spacer()
                     if let url = model.pgnURL { ShareLink(item:url) { Image(systemName:"square.and.arrow.up").frame(width:44,height:44) }.accessibilityLabel("导出完整 PGN") }
                 }
+                Button { editingNote = true } label: {
+                    Label(currentNote.isEmpty ? "添加个人备注" : "查看 / 编辑个人备注",systemImage:"square.and.pencil").frame(minHeight:44)
+                }.accessibilityIdentifier("editPersonalNote")
+                if decisions.canRecord(gameID:record.id) && !decisions.data.notes.contains(where:{$0.gameID == record.id && $0.ply == max(0,ply-1)}) {
+                    Button("记录这处决策（事后回忆，可跳过）") {
+                        decisionCapture = DecisionCapture(record:record,ply:max(0,ply-1),origin:.recollection)
+                    }.frame(minHeight:44).accessibilityIdentifier("captureReviewDecision")
+                }
                 if model.loading { ProgressView("载入完整棋谱…") }
                 if let error = model.error { Text(error).font(.subheadline).foregroundStyle(.red).accessibilityIdentifier("reviewError") }
                 if model.frames.indices.contains(ply) {
                     GameBoard(frame:model.frames[ply],flipped:record.human == "b")
-                    replayControls
+                    if !record.moves.isEmpty { replayControls }
                     ScrollView(.horizontal) { HStack(spacing:4) {
                         ForEach(1..<model.frames.count,id:\.self) { index in
                             let fields = model.frames[index-1].fen.split(separator:" ")
@@ -269,7 +302,9 @@ struct GameReviewView: View {
                                 .background(ply == index ? Palette.sage.opacity(0.20) : .white,in:RoundedRectangle(cornerRadius:6)).accessibilityIdentifier("move-\(index)")
                         }
                     } }
-                    if let report = model.report {
+                    if record.moves.isEmpty {
+                        positionCard
+                    } else if let report = model.report {
                         if model.running { Text("正在更新；当前显示上一份完整报告。").font(.caption).foregroundStyle(.secondary) }
                         accuracyCard(report)
                         Chart {
@@ -290,7 +325,7 @@ struct GameReviewView: View {
                     }
                     analysisControls
                     if ply > 0, let entry = model.results[ply-1] { coachCard(entry) }
-                    else { Text(ply == 0 ? "选择某一步，查看它背后的原因。" : "这一步尚无完整分析。").font(.subheadline).foregroundStyle(.secondary) }
+                    else if !record.moves.isEmpty { Text(ply == 0 ? "选择某一步，查看它背后的原因。" : "这一步尚无完整分析。").font(.subheadline).foregroundStyle(.secondary) }
                     if let report = model.report {
                         let highlights = report.entries.filter { $0.color == record.human && $0.loss >= 5 }.sorted { $0.loss > $1.loss }.prefix(5)
                         if !highlights.isEmpty {
@@ -306,13 +341,29 @@ struct GameReviewView: View {
                     }
                 }
             }.padding(12).frame(maxWidth:560)
-        }.background(Palette.paper).navigationTitle("复盘 · 弈外").navigationBarTitleDisplayMode(.inline)
+        }.background(Palette.paper).navigationTitle(record.moves.isEmpty ? "局面分析 · 弈外" : "复盘 · 弈外").navigationBarTitleDisplayMode(.inline)
         .background { if let engine = model.engine { ReviewEngineHost(engine:engine).frame(width:1,height:1).opacity(0.01).allowsHitTesting(false).accessibilityHidden(true) } }
         .task { model.load() }
         .onDisappear { model.cancel() }
         .onChange(of:scenePhase) { _,phase in if phase != .active { model.cancel() } else { model.load() } }
         .onChange(of:plotPly) { _,value in if let value { ply = min(record.moves.count,max(0,value)) } }
         .sheet(item:$evidence) { item in EvidenceView(item:item) }
+        .sheet(isPresented:$editingNote) { GameNoteView(recordID:record.id,note:currentNote) }
+        .sheet(item:$decisionCapture) { DecisionCaptureView(capture:$0) }
+    }
+    private var positionCard: some View {
+        VStack(alignment:.leading,spacing:10) {
+            Text("独立局面 · 不计算整局准确度").font(.headline)
+            Text("\(model.frames[0].turn == "w" ? "白" : "黑")方走棋 · \(model.frames[0].replies.count) 个合法走法").accessibilityIdentifier("positionTurn")
+            Text(record.initialFEN).font(.caption.monospaced()).textSelection(.enabled).accessibilityIdentifier("positionFEN")
+            if let value = model.report?.evaluations.first {
+                Text(value.label).font(.headline).accessibilityIdentifier("positionScore")
+                Text("Stockfish · 实际深度 \(value.depth) · 限时估值可能遗漏更深战术").font(.caption).foregroundStyle(.secondary)
+                if !value.pv.isEmpty {
+                    Button("查看候选与变化") { evidence = EvidenceReplay(title:"局面候选与变化",fen:record.initialFEN,moves:value.pv,prefix:0) }.accessibilityIdentifier("positionEvidence")
+                }
+            }
+        }.padding(14).background(.white,in:RoundedRectangle(cornerRadius:12))
     }
     private var replayControls: some View {
         VStack(spacing:2) {
@@ -330,10 +381,10 @@ struct GameReviewView: View {
             Label("AI Coach · 看懂这一手",systemImage:"sparkles").font(.headline)
             Picker("分析质量",selection:$model.duration) { Text("快速").tag(450); Text("细致").tag(1400) }.pickerStyle(.segmented).disabled(model.running).accessibilityIdentifier("analysisQuality")
             rowLayout {
-                Text(model.running ? "已分析 \(min(record.moves.count,max(0,model.completed-1))) / \(record.moves.count) 步" : "已分析 \(model.results.count) / \(record.moves.count) 步").font(.subheadline).accessibilityIdentifier("analysisProgress")
+                Text(record.moves.isEmpty ? (model.running ? "正在分析局面…" : model.report == nil ? "尚未分析局面" : "局面分析完成") : model.running ? "已分析 \(min(record.moves.count,max(0,model.completed-1))) / \(record.moves.count) 步" : "已分析 \(model.results.count) / \(record.moves.count) 步").font(.subheadline).accessibilityIdentifier("analysisProgress")
                 if !textSize.isAccessibilitySize { Spacer() }
                 if model.running { Button("取消") { model.cancel() }.accessibilityIdentifier("cancelAnalysis") }
-                else { Button(model.report == nil ? "分析整局" : "重新分析") { model.analyze { game.saveReview($0,record:record) } }.disabled(record.moves.isEmpty).accessibilityIdentifier("analyzeGame") }
+                else { Button(model.report == nil ? (record.moves.isEmpty ? "分析局面" : "分析整局") : "重新分析") { model.analyze { game.saveReview($0,record:record) } }.accessibilityIdentifier("analyzeGame") }
             }.frame(minHeight:44)
             if model.running { ProgressView(value:Double(model.completed),total:Double(record.moves.count+1)) }
             if let error = model.error {
@@ -347,9 +398,9 @@ struct GameReviewView: View {
         VStack(alignment:.leading,spacing:10) {
             Text(report.gameComplete ? "整局准确度" : "当前棋谱准确度 · 棋局未结束").font(.headline)
             rowLayout {
-                accuracyNumber("白方\(record.human == "w" ? " · 你" : " · 电脑")",value:report.white).accessibilityIdentifier("whiteAccuracy")
+                accuracyNumber("白方\(record.source != nil ? "" : record.human == "w" ? " · 你" : " · 电脑")",value:report.white).accessibilityIdentifier("whiteAccuracy")
                 if !textSize.isAccessibilitySize { Spacer() }
-                accuracyNumber("黑方\(record.human == "b" ? " · 你" : " · 电脑")",value:report.black).accessibilityIdentifier("blackAccuracy")
+                accuracyNumber("黑方\(record.source != nil ? "" : record.human == "b" ? " · 你" : " · 电脑")",value:report.black).accessibilityIdentifier("blackAccuracy")
             }
             DisclosureGroup("评分口径") {
                 Text("与弈外网站使用相同 lite 引擎与准确度公式。分别汇总双方走法，结合局势波动和调和平均；不是简单的好棋占比，也不是 Elo。限时搜索会受设备性能影响，数值可能波动。将死单独显示，准确度计算按网站映射处理。").font(.caption)

@@ -1,4 +1,4 @@
-# 构建 0.3.4（7）
+# 构建 0.4.0（10）
 
 ## 原生应用
 
@@ -11,9 +11,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
   -project YiwaiPractice.xcodeproj -scheme YiwaiPractice \
   -configuration Release -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath build -jobs 1 build CODE_SIGNING_ALLOWED=NO
-node --test scripts/engine-tests.cjs
-node --test scripts/review-tests.cjs
-node --test scripts/stockfish-transport-tests.cjs
+node --test scripts/*-tests.cjs
 ```
 
 模拟器测试可用 `scripts/test.sh`，默认选择 iPhone 16e；若未安装该设备，使用本机已有模拟器替换脚本中的 destination。运行完整 UI 测试需要相应模拟器运行时和足够磁盘空间。

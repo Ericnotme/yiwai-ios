@@ -33,7 +33,7 @@ final class ChessEngine {
             let callback: @convention(block) () -> Bool = { cancellation.isCancelled }
             context.setObject(callback,forKeyedSubscript:"nativeCancelled" as NSString)
         }
-        for name in ["chess", "seed-engine", "chess-bridge"] {
+        for name in ["chess", "seed-engine", "position-import", "chess-bridge"] {
             guard let url = bundle.url(forResource:name, withExtension:"js") else { throw ChessFailure.invalid("缺少本地棋规文件") }
             context.evaluateScript(try String(contentsOf:url, encoding:.utf8))
             if let error = context.exception { throw ChessFailure.invalid(error.toString()) }

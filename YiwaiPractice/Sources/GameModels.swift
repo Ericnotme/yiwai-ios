@@ -59,10 +59,17 @@ struct GameRecord: Codable, Identifiable {
     var moves: [String] = []; var human = "w"; var level = 1; var ending: String? = nil
     var analyses: [String:MoveReview] = [:]
     var reviewReport: GameReviewReport? = nil
-    var title: String { "执\(human == "w" ? "白" : "黑") · \(moves.count) 半回合" }
+    var source: String? = nil
+    var importedHeaders: [String:String]? = nil
+    // Optional additions keep pre-capsule games readable without a migration.
+    var originalPGN: String? = nil
+    var personalNote: String? = nil
+    var title: String { if let source { return source.uppercased() + (moves.isEmpty ? " · 独立局面" : " · \(moves.count) 半回合") }; return "执\(human == "w" ? "白" : "黑") · \(moves.count) 半回合" }
     var info: [String:String] {
         let formatter = DateFormatter(); formatter.dateFormat = "yyyy.MM.dd"
-        return ["human":human,"ending":ending ?? "","date":formatter.string(from:created)]
+        var values = ["human":human,"ending":ending ?? "","date":formatter.string(from:created)]
+        if let importedHeaders, let data = try? JSONEncoder().encode(importedHeaders) { values["importHeaders"] = String(data:data,encoding:.utf8) }
+        return values
     }
 }
 extension ChessEngine {
@@ -105,7 +112,7 @@ extension ChessEngine {
                 records = try JSONDecoder().decode([GameRecord].self,from:Data(contentsOf:self.file))
                 // Validate persisted move histories before displaying or overwriting them.
                 for record in records { _ = try rules?.game(record) }
-                currentID = records.first?.id; refresh()
+                currentID = records.first(where:{$0.source == nil})?.id; refresh()
             }
         } catch { readFailed = true; errorMessage = "棋谱读取失败，原文件已保留：\(error.localizedDescription)" }
     }
@@ -116,9 +123,33 @@ extension ChessEngine {
         do { _ = try rules?.game(game) } catch { errorMessage = error.localizedDescription; return }
         records.insert(game,at:0); currentID = game.id; paused = false; selected = nil; promotions = []; refresh(); persist(); startComputer()
     }
+    @discardableResult func importPosition(_ text: String, format: String) throws -> GameRecord {
+        guard !readFailed, let rules else { throw ChessFailure.invalid("棋谱存储不可用，原文件已保留。") }
+        guard text.utf8.count <= (format == "pgn" ? 200000 : 512) else { throw ChessFailure.invalid("文件过大：FEN 最多 512 字节，PGN 最多 200 KB。") }
+        struct Imported: Decodable { let initialFen: String; let moves: [String]; let headers: [String:String] }
+        let input: Imported = try rules.call("importPosition",[text,format])
+        let record = GameRecord(initialFEN:input.initialFen,moves:input.moves,source:format,importedHeaders:input.headers,originalPGN:format == "pgn" ? text : nil)
+        _ = try rules.game(record)
+        let next = [record] + records
+        try writeRecords(next)
+        pause(); records = next
+        return record
+    }
+    func savePersonalNote(_ id: UUID, text: String) throws {
+        guard text.count <= 10000 else { throw ChessFailure.invalid("备注最多 10,000 字；请缩短后保存。") }
+        guard let i = records.firstIndex(where:{$0.id == id}) else { throw ChessFailure.invalid("这盘棋已不在本机记录中。") }
+        var next = records
+        next[i].personalNote = text; next[i].updated = Date()
+        try writeRecords(next)
+        records = next
+    }
+    func capsuleRecords() throws -> [GameRecord] {
+        guard !readFailed else { throw ChessFailure.invalid("棋谱原文件无法读取，不能生成完整导出。原文件已保留。") }
+        return records
+    }
     func resume(_ id: UUID? = nil) {
         pause()
-        if let id { currentID = id }
+        if let id { guard records.first(where:{$0.id == id})?.source == nil else { return }; currentID = id }
         guard let i = records.firstIndex(where:{$0.id == currentID}) else { return }
         if records[i].ending == "saved" { records[i].ending = nil }
         paused = false; refresh(); persist(); startComputer()
@@ -174,8 +205,15 @@ extension ChessEngine {
     }
     private func persist() {
         guard !readFailed else { return }
-        do { try FileManager.default.createDirectory(at:file.deletingLastPathComponent(),withIntermediateDirectories:true); try JSONEncoder().encode(records).write(to:file,options:.atomic) }
+        do { try writeRecords(records) }
         catch { errorMessage = "棋谱未能保存，请检查设备空间。当前棋局仍在内存中。" }
+    }
+    private func writeRecords(_ value: [GameRecord]) throws {
+        guard !readFailed else { throw ChessFailure.invalid("棋谱存储不可用，原文件已保留。") }
+        do {
+            try FileManager.default.createDirectory(at:file.deletingLastPathComponent(),withIntermediateDirectories:true)
+            try JSONEncoder().encode(value).write(to:file,options:.atomic)
+        } catch { throw ChessFailure.invalid("未能保存到设备，请检查可用空间后重试。") }
     }
     private func startComputer() {
         guard !paused, let record = current, record.ending == nil, let snapshot, snapshot.result == "*", snapshot.frame.turn != record.human else { return }

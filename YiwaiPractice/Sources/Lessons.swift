@@ -1,6 +1,6 @@
 import Foundation
 
-struct Position: Identifiable {
+struct Position: Codable, Identifiable {
     let id: String
     let label: String
     let fen: String
@@ -12,7 +12,7 @@ struct Position: Identifiable {
     let cues: [String]
     let changed: [String]
 }
-struct Lesson: Identifiable {
+struct Lesson: Codable, Identifiable {
     let id: String
     let title: String
     let subtitle: String

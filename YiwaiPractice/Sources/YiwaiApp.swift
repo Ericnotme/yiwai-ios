@@ -3,6 +3,7 @@ import SwiftUI
 @main struct YiwaiApp: App {
     @StateObject private var notebook: Notebook
     @StateObject private var game: GameController
+    @StateObject private var decisions: DecisionStore
     init() {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-simulate-no-network") {
@@ -28,9 +29,19 @@ import SwiftUI
         }
         #endif
         _game = StateObject(wrappedValue:controller)
+        let decisionFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-decisions.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let decisionFile { try? FileManager.default.removeItem(at:decisionFile) }
+        var decisionClock: () -> Date = Date.init
+        var clockOrigin = "device clock"
+        #if DEBUG
+        if testMode, let dateText = ProcessInfo.processInfo.environment["YIWAI_UI_CLOCK"], let date = ISO8601DateFormatter().date(from:dateText) {
+            decisionClock = { date }; clockOrigin = "injected UI test clock; synthetic data only"
+        }
+        #endif
+        _decisions = StateObject(wrappedValue:DecisionStore(file:decisionFile,clock:decisionClock,clockOrigin:clockOrigin))
     }
     var body: some Scene {
-        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).tint(Palette.coral).preferredColorScheme(.light) }
+        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).tint(Palette.coral).preferredColorScheme(.light) }
     }
 }
 #if DEBUG
@@ -100,6 +111,7 @@ struct PracticeView: View {
                     HStack(alignment:.top) {
                         VStack(alignment:.leading,spacing:6) {
                             Text("弈外").font(.system(size:32,weight:.semibold,design:.serif))
+                            Text("Second Look Chess").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("englishBrand")
                             Text("每天看懂一个为什么").font(.subheadline).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -258,6 +270,7 @@ struct AboutView: View {
                 Section {
                     VStack(alignment:.leading,spacing:12) {
                         Text("弈外").font(.title2.weight(.semibold))
+                        Text("Second Look Chess").font(.headline).accessibilityIdentifier("englishBrand")
                         Text("不急着多走一步。\n先把这一步的道理看清。").font(.body).lineSpacing(5)
                         Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 原生 iPhone 版").font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical,14)
@@ -271,7 +284,7 @@ struct AboutView: View {
                 }
                 Section("只在你的设备上") {
                     Text("练习、棋规和记录均离线运行，无账号、无广告、无分析追踪。不会申请通知权限。")
-                    Text("支持本机棋局 PGN 导出。PGN 导入、在线对战和跨设备同步尚未加入。")
+                    Text("支持 FEN 局面与 PGN 棋谱导入、离线分析及 PGN 导出。导入保存在本机；在线对战和跨设备同步尚未加入。")
                 }.font(.subheadline)
                 Section("隐私与支持") {
                     NavigationLink("隐私政策") { PrivacyPolicyView() }.accessibilityIdentifier("privacyPolicy")

@@ -1,6 +1,6 @@
 # 弈外 · iPhone 原生版
 
-SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.3.3（6）** 的应用源码；构建步骤和许可证见仓库根目录的 `BUILDING.md`、`NOTICE.md`、`LICENSE`。复盘在非持久化 WebKit 中离线运行本地 Stockfish WASM。
+SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.4.0（10）** 的应用源码；构建步骤和许可证见仓库根目录的 `BUILDING.md`、`NOTICE.md`、`LICENSE`。复盘在非持久化 WebKit 中离线运行本地 Stockfish WASM。
 
 ## 可以做什么
 
@@ -10,7 +10,7 @@ SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.
 - 网站口径的双方准确度、局势曲线、关键失误；只有全部局面分析完毕才生成分数。
 - 原有三个原创主题、九个练习局面，以及本地错题本和笔记。
 
-对弈电脑继续使用原创 Seed 0.2，棋力未评级。复盘独立使用与网站相同的 Stockfish.js 19.0.0 lite single。AI Coach 是引擎证据与规则讲解，不是大模型对话。没有付费 API、云同步、PGN 导入或在线真人棋局辅助。
+对弈电脑继续使用原创 Seed 0.2，棋力未评级。复盘独立使用与网站相同的 Stockfish.js 19.0.0 lite single。AI Coach 是引擎证据与规则讲解，不是大模型对话。新增手动 FEN/PGN、本地时间胶囊和单主题学习闭环，见根目录 docs/learning-loop.md。没有付费 API、云同步或在线真人棋局辅助。
 
 ## 构建与测试
 
