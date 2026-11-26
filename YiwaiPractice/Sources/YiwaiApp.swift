@@ -62,7 +62,7 @@ enum Palette {
 struct RootView: View {
     @EnvironmentObject var notebook: Notebook
     @EnvironmentObject var game: GameController
-    @State private var tab = ProcessInfo.processInfo.arguments.contains("-ui-testing") ? 0 : 3
+    @State private var tab = 0
     @State private var lessonIndex = 0
     @State private var positionIndex = 0
     @State private var session = UUID()
@@ -117,6 +117,20 @@ struct PracticeView: View {
                         Spacer()
                         Button { chooseLesson = true } label: { Label("换题",systemImage:"square.grid.2x2").font(.subheadline.weight(.medium)).padding(12).background(.white,in:Capsule()) }.accessibilityIdentifier("chooseLesson")
                     }
+                    NavigationLink {
+                        FortressLabView()
+                    } label: {
+                        HStack(alignment: .center, spacing: 12) {
+                            Image(systemName: "shield.checkerboard").font(.title2).foregroundStyle(Palette.sage)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("不败空间").font(.headline).foregroundStyle(Palette.ink)
+                                Text("预测 · 攻防 · 反例").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
+                        }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    }.buttonStyle(.plain).accessibilityIdentifier("fortressEntry")
                     HStack { Text("\(String(format:"%02d",lessonIndex + 1))  /  \(lesson.title)").font(.subheadline.weight(.semibold)); Spacer(); Text("\(positionIndex + 1) / 3").font(.caption.monospacedDigit()).foregroundStyle(.secondary) }
                     VStack(alignment:.leading,spacing:12) {
                         HStack { Label("白先",systemImage:"circle.fill").font(.caption.weight(.semibold)); Spacer(); Text(answer == nil ? position.label : "逐步回放 · \(frameIndex) / \(frames.count - 1)").font(.caption).foregroundStyle(.secondary) }
