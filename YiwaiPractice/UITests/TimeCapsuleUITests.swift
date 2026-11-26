@@ -11,6 +11,24 @@ final class TimeCapsuleUITests: XCTestCase {
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot:app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
+    private func selectLocalExportDestination(_ app: XCUIApplication) {
+        let localRoot = app.otherElements.matching(NSPredicate(format: "identifier BEGINSWITH %@", "DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")).firstMatch
+        let names = ["On My iPhone", "On My iPad", "我的iPhone", "我的 iPhone", "我的iPad", "我的 iPad"]
+        let localLocation = app.cells.matching(NSPredicate(format: "identifier IN %@", names.map { "DOC.sidebar.item." + $0 })).firstMatch
+        // A fresh picker may open at Browse rather than remember a destination.
+        // Only the explicit on-device sidebar row is eligible for navigation.
+        let save = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["保存", "Save"])).firstMatch
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in localLocation.isHittable || (localRoot.exists && save.exists) }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 20), .completed, app.debugDescription)
+        // Browse can retain a stale localRoot wrapper after navigating back.
+        // A visible local sidebar row must still be selected explicitly.
+        if localLocation.isHittable {
+            capture(app, "export-browse-before-local-selection")
+            localLocation.tap()
+        }
+        // A sidebar row/title/filename is not proof of the selected provider.
+        XCTAssertTrue(localRoot.waitForExistence(timeout: 20), app.debugDescription)
+    }
     private func reveal(_ app: XCUIApplication, _ item: XCUIElement) {
         for _ in 0..<8 { if item.isHittable { return }; app.swipeUp() }
         XCTAssertTrue(item.isHittable)
@@ -46,13 +64,7 @@ final class TimeCapsuleUITests: XCTestCase {
         capture(app,"capsule-02-overview")
         reveal(app,app.buttons["exportCapsule"]); app.buttons["exportCapsule"].tap()
         let filename = app.textFields["DOCPicker.filenameTextField"]
-        // Save synthetic data only after the actual local browsing root loads.
-        // The title may be a menu button rather than static text, and a filename
-        // field can appear before any destination is ready.
-        let localDestination = app.otherElements.matching(
-            NSPredicate(format: "identifier BEGINSWITH %@", "DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")
-        ).firstMatch
-        XCTAssertTrue(localDestination.waitForExistence(timeout:20),app.debugDescription)
+        selectLocalExportDestination(app)
         XCTAssertFalse(app.staticTexts["capsuleError"].exists)
         capture(app,"capsule-03-system-file-export")
         if filename.exists {
