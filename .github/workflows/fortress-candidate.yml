@@ -17,9 +17,27 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
+    name: Native ${{ matrix.suite }}
     if: github.ref == 'refs/heads/p0/fortress-core-review-20261126' || github.ref == 'refs/heads/codex/yiwai-fortress-release-20261126'
     runs-on: macos-26
-    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: unit
+            target: YiwaiTests
+            tests: 94
+            test_minutes: 35
+            job_minutes: 45
+          - suite: ui
+            target: YiwaiUITests
+            tests: 34
+            test_minutes: 90
+            job_minutes: 100
+    timeout-minutes: ${{ matrix.job_minutes }}
+    env:
+      TEST_TARGET: ${{ matrix.target }}
+      EXPECTED_TEST_COUNT: ${{ matrix.tests }}
     steps:
       - name: Checkout exact public candidate without credentials
         id: checkout
@@ -40,8 +58,9 @@ jobs:
           python3 scripts/verify-source.py 2>&1 | tee ci-evidence/source-verification.log
           node --test YiwaiPractice/scripts/*-tests.cjs 2>&1 | tee ci-evidence/javascript-tests.log
           node YiwaiPractice/scripts/verify-fortress-course.cjs ci-evidence/fortress-course-validation.json
-      - name: Select available iPhone simulator and run native tests
+      - name: Run complete target serially
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: ${{ matrix.test_minutes }}
         working-directory: source
         shell: bash
         run: |
@@ -57,14 +76,61 @@ jobs:
           PY
           )
           echo "Simulator: $DEVICE" | tee ci-evidence/test-device.txt
+          printf '%s\n' "$TEST_TARGET" > ci-evidence/test-target.txt
           set +e
-          xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO -resultBundlePath ci-evidence/DebugTests.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee ci-evidence/debug-tests.log
+          xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO "-only-testing:$TEST_TARGET" -resultBundlePath ci-evidence/DebugTests.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee ci-evidence/debug-tests.log
           TEST_EXIT=${PIPESTATUS[0]}
-          set -e
           printf '%s\n' "$TEST_EXIT" > ci-evidence/debug-tests-exit.txt
-          exit "$TEST_EXIT"
+          xcrun xcresulttool get test-results summary --path ci-evidence/DebugTests.xcresult --compact > ci-evidence/test-summary.json 2> ci-evidence/test-summary-error.log
+          SUMMARY_EXIT=$?
+          set -e
+          if [ "$TEST_EXIT" -ne 0 ]; then exit "$TEST_EXIT"; fi
+          if [ "$SUMMARY_EXIT" -ne 0 ]; then exit "$SUMMARY_EXIT"; fi
+          python3 - <<'PY'
+          import json, os
+          summary=json.load(open('ci-evidence/test-summary.json'))
+          expected=int(os.environ['EXPECTED_TEST_COUNT'])
+          # Update this inventory only when the full target intentionally gains/loses tests.
+          assert summary['totalTestCount'] == expected, summary
+          assert summary['passedTests'] == expected, summary
+          assert summary['failedTests'] == 0 and summary['skippedTests'] == 0, summary
+          assert summary.get('expectedFailures', 0) == 0, summary
+          print(f"Complete {os.environ['TEST_TARGET']}: {expected} passed, no failures/skips")
+          PY
+      - name: Preserve this target's results and raw logs even on failure
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: yiwai-${{ matrix.suite }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: source/ci-evidence/
+          if-no-files-found: error
+          retention-days: 30
+  release:
+    name: Unsigned iOS Release
+    if: github.ref == 'refs/heads/p0/fortress-core-review-20261126' || github.ref == 'refs/heads/codex/yiwai-fortress-release-20261126'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact public candidate without credentials
+        id: checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" source
+          cd source
+          git checkout --detach "$GITHUB_SHA"
+          mkdir -p ci-evidence
+          git rev-parse HEAD | tee ci-evidence/source-commit.txt
+          xcodebuild -version | tee ci-evidence/xcode-version.txt
+      - name: Verify exact source manifest
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-source.py 2>&1 | tee ci-evidence/source-verification.log
       - name: Release iOS device build (not signed or uploaded)
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: 20
         working-directory: source
         shell: bash
         run: |
@@ -75,11 +141,11 @@ jobs:
           set -e
           printf '%s\n' "$BUILD_EXIT" > ci-evidence/release-build-exit.txt
           exit "$BUILD_EXIT"
-      - name: Preserve native results and raw logs even when a check fails
+      - name: Preserve Release results and raw logs even on failure
         if: ${{ always() && steps.checkout.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: yiwai-native-${{ github.sha }}-${{ github.run_attempt }}
+          name: yiwai-release-${{ github.sha }}-${{ github.run_attempt }}
           path: source/ci-evidence/
           if-no-files-found: error
           retention-days: 30
