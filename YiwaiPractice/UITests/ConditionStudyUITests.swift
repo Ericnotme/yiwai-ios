@@ -7,13 +7,15 @@ final class ConditionStudyUITests:XCTestCase {
             for _ in 0..<9 {
                 let footer=app.buttons["pauseConditionStudy"]
                 let visibleBottom=footer.exists ? footer.frame.minY-8 : app.frame.maxY-115
-                if element.exists && element.isHittable && (["pauseConditionStudy","endConditionStudy","收起键盘"].contains(element.identifier) || element.label=="收起键盘" || (element.frame.minY > 110 && element.frame.maxY < visibleBottom)) { return }
+                let visible=element.exists && (footer.exists ? element.frame.minY > 110 && element.frame.maxY < visibleBottom : element.frame.midY > 110 && element.frame.midY < visibleBottom)
+                if element.exists && element.isHittable && (["pauseConditionStudy","endConditionStudy","收起键盘"].contains(element.identifier) || element.label=="收起键盘" || visible) { return }
                 // Keep content controls above the actual fixed footer, which
                 // becomes taller at accessibility text sizes. Use the content
                 // rather than the transparent outer margin for scrolling.
                 let lower=footer.exists ? min(0.80,(footer.frame.minY-app.frame.minY-40)/app.frame.height) : 0.80
-                app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:0.50,dy:direction ? lower:0.20))
-                    .press(forDuration:0.05,thenDragTo:app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:0.50,dy:direction ? 0.20:lower)))
+                let x:CGFloat=footer.exists ? 0.50 : 0.97
+                app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:x,dy:direction ? lower:0.20))
+                    .press(forDuration:0.05,thenDragTo:app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:x,dy:direction ? 0.20:lower)))
             }
         }
         XCTAssertTrue(element.isHittable,app.debugDescription)
