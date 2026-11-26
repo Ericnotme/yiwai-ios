@@ -46,11 +46,11 @@ final class TimeCapsuleUITests: XCTestCase {
         capture(app,"capsule-02-overview")
         reveal(app,app.buttons["exportCapsule"]); app.buttons["exportCapsule"].tap()
         let filename = app.textFields["DOCPicker.filenameTextField"]
-        // Save synthetic test data only, and only when the local device destination is visible.
-        // Newer document pickers omit the legacy filename field; their locale
-        // follows the simulator rather than the app's Chinese content.
-        let localDestination = app.navigationBars.staticTexts.matching(
-            NSPredicate(format: "label IN %@", ["我的iPhone", "我的 iPhone", "On My iPhone", "我的iPad", "我的 iPad", "On My iPad"])
+        // Save synthetic data only after the actual local browsing root loads.
+        // The title may be a menu button rather than static text, and a filename
+        // field can appear before any destination is ready.
+        let localDestination = app.otherElements.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")
         ).firstMatch
         XCTAssertTrue(localDestination.waitForExistence(timeout:20),app.debugDescription)
         XCTAssertFalse(app.staticTexts["capsuleError"].exists)

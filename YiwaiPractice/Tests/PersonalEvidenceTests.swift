@@ -126,7 +126,7 @@ final class PersonalEvidenceTests:XCTestCase {
         let archive=try s.exportArchive(),capsule=try TimeCapsule.build(games:[],notebook:[],appVersion:"unreleased test",personalEvidence:archive)
         let decoder=JSONDecoder();decoder.dateDecodingStrategy = .secondsSince1970
         let decoded=try decoder.decode(TimeCapsule.self,from:capsule.encoded())
-        XCTAssertEqual(decoded.schemaVersion,4);XCTAssertEqual(decoded.personalEvidence?.cases[0].game.originalPGN,PersonalRules.demoPGN)
+        XCTAssertEqual(decoded.schemaVersion,6);XCTAssertEqual(decoded.personalEvidence?.cases[0].game.originalPGN,PersonalRules.demoPGN)
         XCTAssertEqual(decoded.personalEvidence?.cases[0].hypothesisText,s.item(id)?.hypothesis)
         var previous=try XCTUnwrap(JSONSerialization.jsonObject(with:JSONEncoder().encode(s.item(id)!)) as? [String:Any]);previous.removeValue(forKey:"hypothesisText")
         let previousCase=try JSONDecoder().decode(PersonalCase.self,from:JSONSerialization.data(withJSONObject:previous))

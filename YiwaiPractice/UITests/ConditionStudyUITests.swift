@@ -95,13 +95,15 @@ final class ConditionStudyUITests:XCTestCase {
         tap(app,"homeTimeCapsule");tap(app,"exportCapsule")
         XCTAssertTrue(app.alerts["完整导出会暴露对照答案"].waitForExistence(timeout:5))
         app.alerts.buttons["结束对照并导出"].firstMatch.tap()
-        XCTAssertTrue(app.textFields["DOCPicker.filenameTextField"].waitForExistence(timeout:15),app.debugDescription)
+        // The filename can appear before the destination has loaded. Require
+        // the actual local browsing root; a sidebar entry or title is not enough.
+        let local=app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH %@","DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")).firstMatch
+        XCTAssertTrue(local.waitForExistence(timeout:20),app.debugDescription)
         XCTAssertFalse(app.staticTexts["capsuleError"].exists);shot("conditions-09-explicit-complete-export")
-        let local=app.otherElements.matching(NSPredicate(format:"identifier CONTAINS %@","Source: com.apple.FileProvider.LocalStorage")).firstMatch
-        XCTAssertTrue(local.exists,"Only save synthetic data to local device storage")
         let filename=app.textFields["DOCPicker.filenameTextField"]
-        filename.tap();filename.typeText("-Conditions-UITest-"+String(UUID().uuidString.prefix(8)))
-        app.buttons["保存"].firstMatch.tap()
+        if filename.exists { filename.tap();filename.typeText("-Conditions-UITest-"+String(UUID().uuidString.prefix(8))) }
+        let save=app.navigationBars.buttons.matching(NSPredicate(format:"label IN %@",["保存","Save"])).firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout:5));XCTAssertTrue(save.isEnabled);save.tap()
         XCTAssertTrue(app.staticTexts["capsuleResult"].waitForExistence(timeout:10))
         XCTAssertTrue(app.staticTexts["capsuleResult"].label.contains("已导出"))
         app.navigationBars.buttons.element(boundBy:0).tap();open(app)

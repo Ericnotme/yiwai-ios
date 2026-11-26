@@ -21,7 +21,7 @@ struct LearningHomeView: View {
                             Image(systemName: "shield.lefthalf.filled").font(.title2).foregroundStyle(Palette.sage)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("不败空间").font(.headline).foregroundStyle(Palette.ink)
-                                Text("预测 · 攻防 · 反例").font(.caption).foregroundStyle(.secondary)
+                                Text("四章课程 · 预测与攻防").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)

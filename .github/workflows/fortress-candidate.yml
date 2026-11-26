@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           python3 scripts/verify-source.py 2>&1 | tee ci-evidence/source-verification.log
           node --test YiwaiPractice/scripts/*-tests.cjs 2>&1 | tee ci-evidence/javascript-tests.log
+          node YiwaiPractice/scripts/verify-fortress-course.cjs ci-evidence/fortress-course-validation.json
       - name: Select available iPhone simulator and run native tests
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         working-directory: source

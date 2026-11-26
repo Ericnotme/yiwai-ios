@@ -131,7 +131,7 @@ final class ConditionStudyTests:XCTestCase {
         let capsule=try TimeCapsule.build(games:[GameRecord(moves:["e2e4"])],notebook:[],appVersion:"0.4.2 test",conditionStudy:s.exportArchive())
         let decoder=JSONDecoder();decoder.dateDecodingStrategy = .secondsSince1970
         let read=try decoder.decode(TimeCapsule.self,from:capsule.encoded()),c=try XCTUnwrap(read.conditionStudy)
-        XCTAssertEqual(read.schemaVersion,4);XCTAssertEqual(read.games[0].moves,["e2e4"])
+        XCTAssertEqual(read.schemaVersion,6);XCTAssertEqual(read.games[0].moves,["e2e4"])
         XCTAssertEqual(c.catalog?.positions.count,16);XCTAssertEqual(c.engineChecks?.count,16);XCTAssertEqual(c.runs[0].seed,"123")
         XCTAssertEqual(c.runs[0].trials.map(\.position.digest),s.run(id)!.trials.map(\.position.digest))
         XCTAssertEqual(c.runs[0].completedCount,12);XCTAssertTrue(c.clockOrigin!.contains("injected"));XCTAssertEqual(c.exposures.count,24)

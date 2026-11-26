@@ -18,6 +18,7 @@ struct TimeCapsuleView: View {
     @EnvironmentObject private var decisions: DecisionStore
     @EnvironmentObject private var conditionStudy: ConditionStudyStore
     @EnvironmentObject private var personal: PersonalStore
+    @EnvironmentObject private var fortressProgress: FortressProgressStore
     @State private var document: CapsuleDocument?
     @State private var exporting = false
     @State private var preparing = false
@@ -38,6 +39,7 @@ struct TimeCapsuleView: View {
                 Text("新导入 PGN 的原始文本，包括注释和变例；错题本记录、备注及对应内置题目。")
                 Text("棋谱执棋方确认、规则扫描与重复证据；决策回炉的原局面、用户理由及来源、标签修订、题目版本、提示与首次作答、到期时间及本主题复习进度。")
                 Text("个人棋谱实验的原文、棋规事实、引擎证据、合法分支、首答、事后回忆及匹配练习/延后复测。")
+                Text("不败空间四章课程的完整题目定义、首答、最近作答及次数；重做不会覆盖首答。示例空间导出不包含个人课程记录。")
                 Text("条件对照的版本化题目、合法 PGN 证明、引擎记录、题序与种子、首答、排除理由、反馈后重试及补记。完整导出含答案，进行中的对照需先结束。")
                 if game.records.contains(where:{$0.source == "pgn" && $0.originalPGN == nil}) {
                     Text("部分棋谱由旧版导入，只有已保存的主线；旧版未保留的注释或变例无法恢复。").foregroundStyle(.secondary)
@@ -83,11 +85,13 @@ struct TimeCapsuleView: View {
             let decisionData = try decisions.exportArchive()
             let conditionData = decisions.demonstration ? nil : try conditionStudy.exportArchive()
             let personalData = decisions.demonstration ? nil : try personal.exportArchive()
+            let fortressData = decisions.demonstration ? nil : try fortressProgress.exportArchive()
+            let fortressLessons = try FortressCourseCatalog.load()
             let version = (Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "unknown")
-                + " (" + (Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "unknown") + ") local capsule prototype"
+                + " (" + (Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "unknown") + ")"
             let id = UUID(); jobID = id; preparing = true
             Self.queue.async {
-                let result = Result { try TimeCapsule.build(games:games,notebook:entries,appVersion:version,decisions:decisionData,conditionStudy:conditionData,personalEvidence:personalData).encoded() }
+                let result = Result { try TimeCapsule.build(games:games,notebook:entries,appVersion:version,decisions:decisionData,conditionStudy:conditionData,personalEvidence:personalData,fortressProgress:fortressData,fortressLessons:fortressLessons).encoded() }
                 DispatchQueue.main.async {
                     guard jobID == id else { return }
                     preparing = false

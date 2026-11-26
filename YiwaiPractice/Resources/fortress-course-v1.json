@@ -1,0 +1,268 @@
+{
+  "version": 1,
+  "chapters": [
+    {
+      "id": "geometry",
+      "title": "先看一步，再谈结论",
+      "summary": "区分象的格色、当前攻击线和王的走法。一步合法不等于整局已被证明。",
+      "questions": [
+        {
+          "id": "geometry-wrong-color",
+          "title": "错色象留下的角落",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "8/k7/8/8/8/8/P6B/K7 b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "h2"
+          ],
+          "explanation": "h2 是深色格，象只能沿深色格行走；a8 是浅色格。当前也没有其他白子控制 a8，所以黑王可以回角。",
+          "expectedLegal": true
+        },
+        {
+          "id": "geometry-open-diagonal",
+          "title": "同色还要看攻击线",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "8/k7/8/8/8/8/P7/K6B b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "h1",
+            "d5"
+          ],
+          "explanation": "h1 的象沿 g2、f3、e4、d5、c6、b7 直达 a8，途中没有阻挡。黑王不能进入被攻击的角落；这一步不合法，不代表已经证明白方必胜。",
+          "expectedLegal": false
+        },
+        {
+          "id": "geometry-color-not-line",
+          "title": "同色象未必正在控制角落",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "8/k7/8/8/8/8/P7/K2B4 b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "d1"
+          ],
+          "explanation": "d1 与 a8 都是浅色格，但两格不在同一条对角线上。象当前没有攻击 a8，所以这一步合法；同色象的存在仍使本局超出错色象防守条件。",
+          "expectedLegal": true
+        },
+        {
+          "id": "geometry-one-square",
+          "title": "安全格也不能跳过去",
+          "prompt": "黑王从 a6 直接到 a8，这一步合法吗？",
+          "fen": "8/8/k7/8/8/8/P6B/K7 b - - 0 1",
+          "candidateUCI": "a6a8",
+          "highlight": [
+            "a6",
+            "a7",
+            "a8"
+          ],
+          "explanation": "即使 a8 没被白子攻击，王每步也只能走到相邻格。a6 到 a8 相隔两格，不能一次跳过 a7。",
+          "expectedLegal": false
+        }
+      ]
+    },
+    {
+      "id": "constraints",
+      "title": "谁在改变可走的格",
+      "summary": "阻挡、王的控制与兵的攻击方向，都会改变当前合法走法。",
+      "questions": [
+        {
+          "id": "constraints-blocked-bishop",
+          "title": "自己的王也会挡住象",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "8/k7/8/3K4/8/8/P7/7B b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "h1",
+            "d5"
+          ],
+          "explanation": "白王 d5 挡在 h1 到 a8 的对角线上，象不能穿过自己的王。白王本身也没有控制 a8，所以黑王可以回角。",
+          "expectedLegal": true
+        },
+        {
+          "id": "constraints-unblocked-bishop",
+          "title": "离开路径，结论随之改变",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "8/k7/8/4K3/8/8/P7/7B b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "h1",
+            "d5",
+            "e5"
+          ],
+          "explanation": "与上一局相比，白王离开 d5 到了 e5，h1 象通向 a8 的路径已打开。改变的是阻挡条件，因此回角现在不合法。",
+          "expectedLegal": false
+        },
+        {
+          "id": "constraints-king-control",
+          "title": "王能封出口，却未必能赶走角王",
+          "prompt": "黑王从 a8 到 b8，这一步合法吗？",
+          "fen": "k7/2K5/8/8/8/8/P7/2B5 b - - 0 1",
+          "candidateUCI": "a8b8",
+          "highlight": [
+            "a8",
+            "b8",
+            "c7"
+          ],
+          "explanation": "白王 c7 控制 b8，黑王不能走到那里。白王并没有控制 a8：封住一个出口，与让角落本身不安全，是两件不同的事。",
+          "expectedLegal": false
+        },
+        {
+          "id": "constraints-pawn-control",
+          "title": "兵的斜前方与正前方",
+          "prompt": "黑王从 a8 到 b8，这一步合法吗？",
+          "fen": "k7/P7/4K3/8/3B4/8/8/8 b - - 0 1",
+          "candidateUCI": "a8b8",
+          "highlight": [
+            "a8",
+            "b8",
+            "a7"
+          ],
+          "explanation": "白兵 a7 斜向攻击 b8，所以黑王不能走到 b8；兵并不攻击正前方 a8。判断王能否进入一格，要看攻击方式，不是只看能不能推进。",
+          "expectedLegal": false
+        }
+      ]
+    },
+    {
+      "id": "promotion",
+      "title": "升变以后还要看保护",
+      "summary": "升变、吃子、保护和解将逐步核对；不要把“升后”直接等同于获胜。",
+      "questions": [
+        {
+          "id": "promotion-legal-choice",
+          "title": "先确认升变这一步",
+          "prompt": "白兵从 a7 到 a8 升为后，这一步合法吗？",
+          "fen": "8/Pk6/4K3/8/3B4/8/8/8 w - - 0 1",
+          "candidateUCI": "a7a8q",
+          "highlight": [
+            "a7",
+            "a8",
+            "b7"
+          ],
+          "explanation": "a8 是空格，白兵可以前进一步并选择升后。升变这一步合法，只说明可以这样走；还必须检查黑方下一步能否吃掉新后。",
+          "expectedLegal": true
+        },
+        {
+          "id": "promotion-capture-queen",
+          "title": "被将军，也能吃掉未受保护的新后",
+          "prompt": "黑王从 b7 到 a8 吃后，这一步合法吗？",
+          "fen": "Q7/1k6/4K3/8/3B4/8/8/8 b - - 0 1",
+          "candidateUCI": "b7a8",
+          "highlight": [
+            "b7",
+            "a8",
+            "d4",
+            "e6"
+          ],
+          "explanation": "这是上一题升后的局面。新后正在将军，但 a8 不受白王和深色象保护；黑王可以吃后解除将军。吃后只余王和象对王，棋规引擎判为子力不足和棋。",
+          "expectedLegal": true
+        },
+        {
+          "id": "promotion-protected-queen",
+          "title": "有保护的后，不能照样吃",
+          "prompt": "黑王从 b8 到 a8 吃后，这一步合法吗？",
+          "fen": "Qk6/8/2B1K3/8/8/8/8/8 b - - 0 1",
+          "candidateUCI": "b8a8",
+          "highlight": [
+            "b8",
+            "a8",
+            "b7",
+            "c6"
+          ],
+          "explanation": "这是新的对照局面，不是上一题的下一步。浅色象 c6 经 b7 保护 a8。黑王虽然正在被将军，也不能吃后走进象的攻击；这里已经超出错色象防守条件。",
+          "expectedLegal": false
+        },
+        {
+          "id": "promotion-escape-check",
+          "title": "吃不了后，不等于已经将死",
+          "prompt": "同一对照局面，黑王从 b8 到 c7，这一步合法吗？",
+          "fen": "Qk6/8/2B1K3/8/8/8/8/8 b - - 0 1",
+          "candidateUCI": "b8c7",
+          "highlight": [
+            "b8",
+            "c7",
+            "a8",
+            "c6",
+            "e6"
+          ],
+          "explanation": "c7 不受后 a8、象 c6 或王 e6 攻击，黑王可以走到那里解除将军。因此“不能吃后”不能直接推出将死或整局必胜。",
+          "expectedLegal": true
+        }
+      ]
+    },
+    {
+      "id": "boundaries",
+      "title": "迁移时重新检查条件",
+      "summary": "换角落、换行棋方或改变子力，都要重新读棋盘；实战防守器仍只用于已验证的 a8 三个起点。",
+      "questions": [
+        {
+          "id": "boundaries-h-corner",
+          "title": "另一侧角落，要重新认格色",
+          "prompt": "黑王从 h7 到 h8，这一步合法吗？",
+          "fen": "8/7k/8/8/8/8/B6P/K7 b - - 0 1",
+          "candidateUCI": "h7h8",
+          "highlight": [
+            "h7",
+            "h8",
+            "a2"
+          ],
+          "explanation": "h8 是深色格，a2 的浅色象不能攻击它；当前也无其他白子控制 h8。此处只核对这一着合法性，并没有把实战防守器扩展到 h 线。",
+          "expectedLegal": true
+        },
+        {
+          "id": "boundaries-white-defender",
+          "title": "换成白王，仍按当前棋规判断",
+          "prompt": "现在轮到白方：白王从 h2 到 h1，这一步合法吗？",
+          "fen": "k7/7p/8/8/8/b7/7K/8 w - - 0 1",
+          "candidateUCI": "h2h1",
+          "highlight": [
+            "h2",
+            "h1",
+            "h7",
+            "a3"
+          ],
+          "explanation": "h1 是浅色格，a3 的深色象不能攻击它；黑兵 h7 攻击 g6，也没有控制 h1。交换攻守后仍须按棋子实际方向判断，这里只验证这一着，不延伸现有实战策略的证明范围。",
+          "expectedLegal": true
+        },
+        {
+          "id": "boundaries-extra-rook",
+          "title": "多一个车，不能再套用原条件",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "1R6/k7/8/8/8/8/P6B/4K3 b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "b8",
+            "h2"
+          ],
+          "explanation": "深色象确实不能攻击 a8，但白车 b8 正在横向控制 a8。额外子力已经改变条件：不能只盯着象的颜色，也不能把原防守结论直接搬来。",
+          "expectedLegal": false
+        },
+        {
+          "id": "boundaries-non-rook-pawn",
+          "title": "边兵这个条件不能省略",
+          "prompt": "黑王从 a7 到 a8，这一步合法吗？",
+          "fen": "8/kP6/8/8/8/8/7B/4K3 b - - 0 1",
+          "candidateUCI": "a7a8",
+          "highlight": [
+            "a7",
+            "a8",
+            "b7",
+            "h2"
+          ],
+          "explanation": "这次白兵在 b 线，它斜向攻击 a8。象的颜色没有改变，但兵已经不是 a 线边兵。角落并不安全；这说明原条件不适用，不是在断言白方必胜。",
+          "expectedLegal": false
+        }
+      ]
+    }
+  ]
+}

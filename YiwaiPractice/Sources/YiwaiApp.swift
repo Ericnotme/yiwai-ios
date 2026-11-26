@@ -6,6 +6,7 @@ import SwiftUI
     @StateObject private var decisions: DecisionStore
     @StateObject private var conditionStudy: ConditionStudyStore
     @StateObject private var personal: PersonalStore
+    @StateObject private var fortressProgress: FortressProgressStore
     init() {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-simulate-no-network") {
@@ -47,9 +48,12 @@ import SwiftUI
         if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let personalFile { try? FileManager.default.removeItem(at:personalFile) }
         _personal = StateObject(wrappedValue:PersonalStore(file:personalFile,clock:decisionClock,clockOrigin:clockOrigin))
         _conditionStudy = StateObject(wrappedValue:ConditionStudyStore(file:conditionFile,clock:decisionClock,clockOrigin:clockOrigin))
+        let fortressFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-fortress.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let fortressFile { try? FileManager.default.removeItem(at:fortressFile) }
+        _fortressProgress = StateObject(wrappedValue:FortressProgressStore(file:fortressFile,clock:decisionClock))
     }
     var body: some Scene {
-        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).environmentObject(conditionStudy).environmentObject(personal).tint(Palette.coral).preferredColorScheme(.light) }
+        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).environmentObject(conditionStudy).environmentObject(personal).environmentObject(fortressProgress).tint(Palette.coral).preferredColorScheme(.light) }
     }
 }
 #if DEBUG
