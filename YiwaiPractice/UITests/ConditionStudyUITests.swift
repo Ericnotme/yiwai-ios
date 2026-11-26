@@ -54,14 +54,30 @@ final class ConditionStudyUITests:XCTestCase {
         naming.typeText(folderName)
         XCTAssertEqual(naming.value as? String, folderName)
         captureState(app, "folder-save-03-named")
-        let done = app.buttons["Done"]
-        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
-        captureState(app, "folder-save-04-after-done")
-        // Observed on local iOS 26.1: Done commits the name and enters the new directory.
+        // Commit through the focused naming editor; keyboard Done can leave it editing.
+        naming.typeText("\n")
+        guard waitForExportState(app, "directory-name-committed", timeout: 10, condition: { !naming.exists }) else { return false }
+        captureState(app, "folder-save-04-after-return")
         let exactRoot = rootPrefix + folderName
         let selected = app.otherElements.matching(NSPredicate(format: "identifier == %@", exactRoot)).firstMatch
-        guard waitForExportState(app, "uuid-directory-selected", timeout: 20, condition: { selected.exists && selected.identifier == exactRoot }) else { return false }
+        let navigation = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
+        let title = navigation.staticTexts.matching(NSPredicate(format: "label == %@", folderName)).firstMatch
+        let titleMenu = navigation.buttons.matching(NSPredicate(format: "identifier != %@ AND label BEGINSWITH %@", "BackButton", folderName + ", ")).firstMatch
+        let isSelected = {
+            selected.exists && selected.identifier == exactRoot &&
+                (title.exists || (titleMenu.exists && titleMenu.label.components(separatedBy: ", ").first == folderName))
+        }
+        let directory = app.cells.matching(NSPredicate(format: "identifier == %@", folderName + ", Folder")).firstMatch
+        guard waitForExportState(app, "uuid-directory-ready", timeout: 20, condition: {
+            isSelected() || (directory.exists && directory.isHittable)
+        }) else { return false }
+        if !isSelected() {
+            XCTAssertEqual(directory.identifier, folderName + ", Folder")
+            directory.tap()
+        }
+        guard waitForExportState(app, "uuid-directory-selected", timeout: 20, condition: isSelected) else { return false }
         XCTAssertEqual(selected.identifier, exactRoot)
+        XCTAssertTrue(isSelected())
         captureState(app, "folder-save-05-selected-directory")
         return true
     }
