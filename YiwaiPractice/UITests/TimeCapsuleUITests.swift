@@ -11,6 +11,45 @@ final class TimeCapsuleUITests: XCTestCase {
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot:app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
+    private func waitForExportState(_ app: XCUIApplication, _ stage: String, timeout: TimeInterval = 60, condition: @escaping () -> Bool) -> Bool {
+        let error = app.staticTexts["capsuleError"]
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in error.exists || condition() }, object: app)
+        let status = XCTWaiter.wait(for: [ready], timeout: timeout)
+        guard status == .completed && !error.exists else {
+            let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            screenshot.name = "export-" + stage + "-failed"; screenshot.lifetime = .keepAlways; add(screenshot)
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "export-" + stage + "-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+            XCTFail(error.exists ? "Export failed: \(error.label)" : "Export did not reach \(stage) within \(timeout)s (\(status))")
+            return false
+        }
+        return true
+    }
+    private func prepareExportFilename(_ app: XCUIApplication) -> Bool {
+        let filename = app.textFields["DOCPicker.filenameTextField"]
+        // A local root and enabled Save can precede the actual document field.
+        guard waitForExportState(app, "filename-ready", condition: {
+            guard filename.exists, let value = filename.value as? String else { return false }
+            return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) else { return false }
+        let unique = "-UITest-" + UUID().uuidString
+        filename.tap(); filename.typeText(unique)
+        return waitForExportState(app, "filename-verified", timeout: 10, condition: {
+            filename.exists && (filename.value as? String)?.contains(unique) == true
+        })
+    }
+    private func verifyExportCompleted(_ app: XCUIApplication) -> Bool {
+        let picker = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
+        guard waitForExportState(app, "picker-dismissed", condition: { !picker.exists }) else { return false }
+        let result = app.staticTexts["capsuleResult"]
+        for _ in 0..<8 {
+            if app.staticTexts["capsuleError"].exists || (result.exists && result.isHittable) { break }
+            app.swipeUp()
+        }
+        return waitForExportState(app, "success-visible", timeout: 10, condition: {
+            result.exists && result.isHittable && result.label.contains("已导出")
+        })
+    }
     private func selectLocalExportDestination(_ app: XCUIApplication) {
         let localRoot = app.otherElements.matching(NSPredicate(format: "identifier BEGINSWITH %@", "DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")).firstMatch
         let names = ["On My iPhone", "On My iPad", "我的iPhone", "我的 iPhone", "我的iPad", "我的 iPad"]
@@ -63,21 +102,18 @@ final class TimeCapsuleUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["capsuleCounts"].label.contains("1 盘"))
         capture(app,"capsule-02-overview")
         reveal(app,app.buttons["exportCapsule"]); app.buttons["exportCapsule"].tap()
-        let filename = app.textFields["DOCPicker.filenameTextField"]
         selectLocalExportDestination(app)
         XCTAssertFalse(app.staticTexts["capsuleError"].exists)
         capture(app,"capsule-03-system-file-export")
-        if filename.exists {
-            filename.tap(); filename.typeText("-UITest-"+String(UUID().uuidString.prefix(8)))
-        }
+        guard prepareExportFilename(app) else { return }
+        XCTAssertTrue(app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH %@","DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")).firstMatch.exists,app.debugDescription)
         let save = app.navigationBars.buttons.matching(
             NSPredicate(format: "label IN %@", ["保存", "Save"])
         ).firstMatch
         XCTAssertTrue(save.waitForExistence(timeout:5))
         XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:save)],timeout:20),.completed,app.debugDescription)
         save.tap()
-        XCTAssertTrue(app.staticTexts["capsuleResult"].waitForExistence(timeout:10))
-        XCTAssertTrue(app.staticTexts["capsuleResult"].label.contains("已导出"))
+        guard verifyExportCompleted(app) else { return }
         capture(app,"capsule-06-export-saved")
         app.terminate()
     }

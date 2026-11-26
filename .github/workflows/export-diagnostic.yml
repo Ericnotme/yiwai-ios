@@ -1,0 +1,141 @@
+name: Export diagnostic (2 cases; not a release gate)
+'on':
+  push:
+    branches: [p0/fortress-core-review-20261126, codex/yiwai-fortress-release-20261126]
+    paths:
+      - 'YiwaiPractice/UITests/ConditionStudyUITests.swift'
+      - 'YiwaiPractice/UITests/TimeCapsuleUITests.swift'
+      - 'release-manifest.json'
+      - '.github/workflows/export-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: yiwai-export-diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  exports:
+    name: Two export cases only (diagnostic)
+    if: github.ref == 'refs/heads/p0/fortress-core-review-20261126' || github.ref == 'refs/heads/codex/yiwai-fortress-release-20261126'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact public candidate without credentials
+        id: checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" source
+          cd source
+          git checkout --detach "$GITHUB_SHA"
+          mkdir -p export-diagnostic-evidence
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD | tee export-diagnostic-evidence/source-commit.txt
+          xcodebuild -version | tee export-diagnostic-evidence/xcode-version.txt
+          printf '%s\n' 'DIAGNOSTIC ONLY: two export UI cases; does not replace full 94-unit/34-UI/Release gates.' > export-diagnostic-evidence/scope.txt
+      - name: Verify exact source manifest
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-source.py 2>&1 | tee export-diagnostic-evidence/source-verification.log
+      - name: Select and record this job's simulator
+        id: simulator
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > export-diagnostic-evidence/devices.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('export-diagnostic-evidence')
+          devices=json.loads((root/'devices.json').read_text())['devices']
+          options=[(runtime,x['name'],x['udid'],x) for runtime,items in devices.items() if 'iOS-' in runtime for x in items if x.get('isAvailable') and x['name'].startswith('iPhone')]
+          assert options, 'No available iPhone simulator'
+          selected=sorted(options,key=lambda x:x[:3])[-1]
+          info=dict(selected[3],runtime=selected[0])
+          assert info.get('dataPath'), 'simctl did not report the selected simulator dataPath'
+          (root/'selected-device.json').write_text(json.dumps(info,indent=2))
+          (root/'test-device.txt').write_text(info['udid']+'\n')
+          print('Selected '+info['name']+' '+info['udid'])
+          PY
+      - name: Run both real export cases serially
+        timeout-minutes: 20
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIAG_DEVICE=$(cat export-diagnostic-evidence/test-device.txt)
+          set +e
+          xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DIAG_DEVICE" -parallel-testing-enabled NO -only-testing:YiwaiUITests/ConditionStudyUITests/testExplicitCompleteExportEndsRoundWithoutInventingAnswers -only-testing:YiwaiUITests/TimeCapsuleUITests/testOfflineImportNoteRelaunchAndExportPicker -resultBundlePath export-diagnostic-evidence/ExportTests.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee export-diagnostic-evidence/export-tests.log
+          DIAG_TEST_EXIT=${PIPESTATUS[0]}
+          printf '%s\n' "$DIAG_TEST_EXIT" > export-diagnostic-evidence/test-exit.txt
+          xcrun xcresulttool get test-results summary --path export-diagnostic-evidence/ExportTests.xcresult --compact > export-diagnostic-evidence/test-summary.json 2> export-diagnostic-evidence/test-summary-error.log
+          DIAG_SUMMARY_EXIT=$?
+          set -e
+          if [ "$DIAG_TEST_EXIT" -ne 0 ]; then exit "$DIAG_TEST_EXIT"; fi
+          if [ "$DIAG_SUMMARY_EXIT" -ne 0 ]; then exit "$DIAG_SUMMARY_EXIT"; fi
+          python3 - <<'PY'
+          import json
+          summary=json.load(open('export-diagnostic-evidence/test-summary.json'))
+          assert summary['totalTestCount'] == 2 and summary['passedTests'] == 2, summary
+          assert summary['failedTests'] == 0 and summary['skippedTests'] == 0, summary
+          assert summary.get('expectedFailures',0) == 0, summary
+          print('DIAGNOSTIC: both export cases passed; full release gates remain separate.')
+          PY
+      - name: Collect actual synthetic export files from this simulator only
+        if: ${{ always() && steps.simulator.outcome == 'success' }}
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,shutil
+          from pathlib import Path
+          assert os.environ.get('GITHUB_ACTIONS') == 'true', 'CI-only collector; do not scan a personal Mac'
+          evidence=Path('export-diagnostic-evidence')
+          selected=json.loads((evidence/'selected-device.json').read_text())
+          device=selected['udid']
+          data=Path(selected['dataPath']).resolve()
+          assert data.is_absolute() and data.name == 'data' and data.parent.name == device, 'Unexpected selected-device dataPath'
+          groups=data/'Containers'/'Shared'/'AppGroup'
+          report={'device':device,'scope':'Selected simulator data/Containers/Shared/AppGroup only; synthetic UI-test exports','available':groups.is_dir(),'files':[],'rejected':[]}
+          destination=evidence/'actual-exports'
+          destination.mkdir(exist_ok=True)
+          if groups.is_dir():
+              boundary=groups.resolve()
+              assert boundary.is_relative_to(data), 'AppGroup path escapes selected simulator'
+              patterns=('Yiwai-Time-Capsule*.json','-Conditions-UITest-*.json','-UITest-*.json')
+              report['filenamePatterns']=list(patterns)
+              for path in sorted({item for pattern in patterns for item in groups.rglob(pattern)}):
+                  if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(boundary):
+                      continue
+                  relative=str(path.relative_to(groups))
+                  if path.stat().st_size > 10*1024*1024:
+                      report['rejected'].append({'relativePath':relative,'reason':'larger than diagnostic limit'})
+                      continue
+                  raw=path.read_bytes()
+                  try:
+                      capsule=json.loads(raw)
+                      assert capsule.get('format') == 'yiwai-local-time-capsule' and capsule.get('schemaVersion') == 6
+                  except (ValueError,AssertionError,AttributeError):
+                      report['rejected'].append({'relativePath':relative,'reason':'not a schema 6 Yiwai capsule'})
+                      continue
+                  digest=hashlib.sha256(raw).hexdigest()
+                  copied=digest[:12]+'-'+path.name
+                  shutil.copyfile(path,destination/copied)
+                  course=capsule.get('fortressLessons') or {}
+                  questions=sum(len(chapter.get('questions',[])) for chapter in course.get('chapters',[]))
+                  report['files'].append({'relativePath':relative,'artifactFile':copied,'bytes':len(raw),'sha256':digest,'schemaVersion':capsule['schemaVersion'],'courseQuestions':questions,'games':len(capsule.get('games',[]))})
+          (evidence/'actual-exports.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print(json.dumps({'actualExportFiles':len(report['files']),'scopeAvailable':report['available'],'rejected':len(report['rejected'])}))
+          PY
+      - name: Preserve diagnostic logs, results and actual exports even on failure
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: yiwai-export-diagnostic-${{ github.sha }}-${{ github.run_attempt }}
+          path: source/export-diagnostic-evidence/
+          if-no-files-found: error
+          retention-days: 30
