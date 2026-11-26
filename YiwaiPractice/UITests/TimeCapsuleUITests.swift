@@ -61,7 +61,8 @@ final class TimeCapsuleUITests: XCTestCase {
         let save = app.navigationBars.buttons.matching(
             NSPredicate(format: "label IN %@", ["保存", "Save"])
         ).firstMatch
-        XCTAssertTrue(save.waitForExistence(timeout:5)); XCTAssertTrue(save.isEnabled)
+        XCTAssertTrue(save.waitForExistence(timeout:5))
+        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"enabled == true"),object:save)],timeout:20),.completed,app.debugDescription)
         save.tap()
         XCTAssertTrue(app.staticTexts["capsuleResult"].waitForExistence(timeout:10))
         XCTAssertTrue(app.staticTexts["capsuleResult"].label.contains("已导出"))

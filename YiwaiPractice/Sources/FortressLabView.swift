@@ -36,10 +36,10 @@ struct FortressLabView: View {
                             VStack(alignment: .leading, spacing: 9) {
                                 Text("第 \(index + 1) 章 · \(chapter.questions.count) 题").font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
                                 Text(chapter.title).font(.title3.bold()).foregroundStyle(Palette.ink)
-                                Text(chapter.summary).font(.subheadline).foregroundStyle(.secondary)
+                                Text(chapter.summary).font(.subheadline).foregroundStyle(Palette.ink.opacity(0.75))
                                 Text("已作答 \(progress.answeredCount(chapter.questions, version: catalog.version)) / \(chapter.questions.count)")
                                     .font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
-                            }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+                            }.multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading).padding(18)
                                 .background(.white, in: RoundedRectangle(cornerRadius: 18))
                         }.accessibilityIdentifier("fortressChapter-\(chapter.id)")
                     }
@@ -72,10 +72,10 @@ private struct FortressChapterView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("\(index + 1). \(question.title)").font(.headline).foregroundStyle(Palette.ink)
-                            Text(question.prompt).font(.subheadline).foregroundStyle(.secondary)
+                            Text(question.prompt).font(.subheadline).foregroundStyle(Palette.ink.opacity(0.75))
                             Text(progress.entry(for: question, version: version) == nil ? "尚未作答" : "已作答 · 可回看或重做")
                                 .font(.caption).foregroundStyle(Palette.sage)
-                        }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+                        }.multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading).padding(18)
                             .background(.white, in: RoundedRectangle(cornerRadius: 18))
                     }.accessibilityIdentifier("fortressQuestion-\(question.id)")
                 }
