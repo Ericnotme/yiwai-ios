@@ -50,23 +50,27 @@ final class TimeCapsuleUITests: XCTestCase {
             result.exists && result.isHittable && result.label.contains("已导出")
         })
     }
-    private func selectLocalExportDestination(_ app: XCUIApplication) {
+    private func selectLocalExportDestination(_ app: XCUIApplication) -> Bool {
+        let picker = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
+        // Picker accessibility readiness is separate from selecting its provider.
+        guard waitForExportState(app, "picker-present", condition: { picker.exists }) else { return false }
         let localRoot = app.otherElements.matching(NSPredicate(format: "identifier BEGINSWITH %@", "DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")).firstMatch
         let names = ["On My iPhone", "On My iPad", "我的iPhone", "我的 iPhone", "我的iPad", "我的 iPad"]
         let localLocation = app.cells.matching(NSPredicate(format: "identifier IN %@", names.map { "DOC.sidebar.item." + $0 })).firstMatch
         // A fresh picker may open at Browse rather than remember a destination.
         // Only the explicit on-device sidebar row is eligible for navigation.
         let save = app.navigationBars.buttons.matching(NSPredicate(format: "label IN %@", ["保存", "Save"])).firstMatch
-        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in localLocation.isHittable || (localRoot.exists && save.exists) }, object: app)
-        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 20), .completed, app.debugDescription)
+        guard waitForExportState(app, "local-location-ready", timeout: 20, condition: {
+            (localLocation.exists && localLocation.isHittable) || (localRoot.exists && save.exists)
+        }) else { return false }
         // Browse can retain a stale localRoot wrapper after navigating back.
         // A visible local sidebar row must still be selected explicitly.
-        if localLocation.isHittable {
+        if localLocation.exists && localLocation.isHittable {
             capture(app, "export-browse-before-local-selection")
             localLocation.tap()
         }
         // A sidebar row/title/filename is not proof of the selected provider.
-        XCTAssertTrue(localRoot.waitForExistence(timeout: 20), app.debugDescription)
+        return waitForExportState(app, "local-root-selected", timeout: 20, condition: { localRoot.exists })
     }
     private func reveal(_ app: XCUIApplication, _ item: XCUIElement) {
         for _ in 0..<8 { if item.isHittable { return }; app.swipeUp() }
@@ -102,7 +106,7 @@ final class TimeCapsuleUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["capsuleCounts"].label.contains("1 盘"))
         capture(app,"capsule-02-overview")
         reveal(app,app.buttons["exportCapsule"]); app.buttons["exportCapsule"].tap()
-        selectLocalExportDestination(app)
+        guard selectLocalExportDestination(app) else { return }
         XCTAssertFalse(app.staticTexts["capsuleError"].exists)
         capture(app,"capsule-03-system-file-export")
         guard prepareExportFilename(app) else { return }
