@@ -8,7 +8,7 @@ struct GameBoard: View {
     var targets: Set<String> = []
     var enabled = false
     var tap: (String) -> Void = { _ in }
-    var drag: (String,String) -> Void = { _,_ in }
+    var drag: ((String,String) -> Void)? = nil
     var body: some View {
         VStack(spacing:3) {
             GeometryReader { geometry in
@@ -43,8 +43,8 @@ struct GameBoard: View {
                             let column = Int(point.x/size), row = Int(point.y/size)
                             return String(Array("abcdefgh")[flipped ? 7-column : column])+String(flipped ? row+1 : 8-row)
                         }
-                        if let from = square(value.startLocation), let to = square(value.location), from != to { drag(from,to) }
-                    }, including: enabled ? .all : .none)
+                        if let from = square(value.startLocation), let to = square(value.location), from != to { drag?(from,to) }
+                    }, including: enabled && drag != nil ? .all : .subviews)
             }.aspectRatio(1,contentMode:.fit)
             HStack(spacing:0) { ForEach(flipped ? Array("hgfedcba") : Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2).frame(maxWidth:.infinity) } }.foregroundStyle(.secondary).accessibilityHidden(true)
         }

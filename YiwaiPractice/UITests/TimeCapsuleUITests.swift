@@ -2,6 +2,12 @@ import XCTest
 
 final class TimeCapsuleUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
+    private func selectHistoryTab(_ app: XCUIApplication) {
+        let phoneTab = app.tabBars.buttons["棋谱"]
+        // iPadOS exposes its top-level tabs as ordinary buttons, not a TabBar.
+        let tab = phoneTab.exists ? phoneTab : app.buttons.matching(NSPredicate(format: "label == %@", "棋谱")).firstMatch
+        XCTAssertTrue(tab.waitForExistence(timeout: 8)); tab.tap()
+    }
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot:app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
@@ -12,7 +18,7 @@ final class TimeCapsuleUITests: XCTestCase {
     func testOfflineImportNoteRelaunchAndExportPicker() {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing","-reset-test-data","-simulate-no-network"]
-        app.launch(); app.tabBars.buttons["棋谱"].tap()
+        app.launch(); selectHistoryTab(app)
         app.buttons["importPosition"].tap(); app.buttons["PGN 棋谱"].tap()
         let input = app.textViews["importText"]
         input.tap(); input.typeText("1. e4 {Local original comment} (1. d4 d5) e5 2. Nf3 Nc6 *")
@@ -27,7 +33,7 @@ final class TimeCapsuleUITests: XCTestCase {
         app.buttons["savePersonalNote"].tap()
         XCTAssertTrue(app.buttons["editPersonalNote"].waitForExistence(timeout:5))
         app.terminate(); app.launchArguments = ["-ui-testing","-simulate-no-network"]; app.launch()
-        app.tabBars.buttons["棋谱"].tap()
+        selectHistoryTab(app)
         let record = app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","record-")).firstMatch
         XCTAssertTrue(record.waitForExistence(timeout:5)); record.tap()
         app.buttons["editPersonalNote"].tap()
@@ -66,7 +72,7 @@ final class TimeCapsuleUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing","-reset-test-data","-simulate-no-network","-UIPreferredContentSizeCategoryName","UICTContentSizeCategoryAccessibilityXXXL"]
         app.launchEnvironment["YIWAI_UI_GAME_MOVES"] = "[\"e2e4\",\"e7e5\"]"
-        app.launch(); app.tabBars.buttons["棋谱"].tap()
+        app.launch(); selectHistoryTab(app)
         let record = app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","record-")).firstMatch
         reveal(app,record); record.tap()
         reveal(app,app.buttons["editPersonalNote"]); app.buttons["editPersonalNote"].tap()

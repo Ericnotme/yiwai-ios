@@ -23,3 +23,5 @@ After the completed live-account inventory confirmed latest upload 0.4.3 (13), t
 ## Gate status
 
 Current automated results and remaining release gates are maintained in `fortress-release-gates.md`. App identity and review inventory, the next local version/build, and the physical-device backup are established. The entire UI suite, device acceptance, voluntary human learning observations and the specific Apple 4.3(a) concern remain open. An unsigned build or development signature does not establish Apple approval, true offline operation, VoiceOver usability, human comprehension, commercial viability or data preservation after a physical-device upgrade. TestFlight beta review and formal App Review are independent.
+
+Build 15 follow-up: the already-tried build 14 is preserved with its evidence. Build 15 fixes a tap-only chessboard capturing vertical scroll at maximum text size; drag is optional, while `.subviews` preserves square button taps. The follow-up also adapts UI test tab selection to iPadOS. The data models are unchanged. Validation of build 14 does not establish validation of build 15.
