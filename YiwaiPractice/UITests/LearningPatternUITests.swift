@@ -4,7 +4,10 @@ final class LearningPatternUITests: XCTestCase {
     private func reveal(_ app:XCUIApplication,_ target:XCUIElement) {
         for _ in 0..<12 {
             if target.isHittable { return }
-            app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.76)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.25)))
+            // Scroll within the actual content. A drag at 97% of the window can
+            // land outside the inset scroll view and leave the page stationary.
+            let scroll = app.scrollViews.firstMatch
+            if scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
         }
         XCTAssertTrue(target.isHittable,app.debugDescription)
     }

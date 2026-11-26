@@ -11,6 +11,14 @@ enum DecisionOrigin: String, Codable {
     var title: String { self == .beforeMove ? "落子前记录" : self == .recollection ? "事后回忆（可能不完整）" : "棋谱规则证据（非用户理由）" }
 }
 struct DecisionTagChange: Codable { let tag: DecisionTag; let at: Date; let author: String }
+struct DecisionRecollection: Codable, Identifiable {
+    let id: UUID
+    let candidates: String
+    let reason: String
+    let recordedAt: Date
+    let skipped: Bool
+    let context: String // Always afterFeedback; never changes the original note's timing.
+}
 struct DecisionNote: Codable, Identifiable {
     let id: UUID
     let gameID: UUID
@@ -23,6 +31,7 @@ struct DecisionNote: Codable, Identifiable {
     let origin: DecisionOrigin
     let recordedAt: Date
     let skipped: Bool
+    var recollections: [DecisionRecollection]? = nil
     var evidence: MateEvidence? = nil
     var tagChanges: [DecisionTagChange]
     var tag: DecisionTag { tagChanges.last?.tag ?? .unconfirmed }
@@ -47,6 +56,7 @@ struct ReforgeSession: Codable, Identifiable {
     let id: UUID; let itemID: UUID; let puzzle: ReforgePuzzle
     let kind: String // new / original / practice. Never inferred from a renamed title.
     let startedAt: Date; let dueAtStart: Date; let tagAtStart: DecisionTag
+    var demonstration: Bool? = nil
     var hintAt: Date? = nil
     var submittedAt: Date? = nil
     var firstMove: String? = nil
@@ -56,12 +66,17 @@ struct ReforgeSession: Codable, Identifiable {
     var finished: Bool { submittedAt != nil }
     var elapsedSeconds: Double? { submittedAt.map { max(0,$0.timeIntervalSince(startedAt)) } }
     var modeLabel: String {
+        if demonstration == true { return kind == "practice" ? "示例针对性练习 · 不计个人进度" : "示例新局面复测 · 模拟到期 · 不计个人进度" }
         if kind == "practice" { return "针对性练习 · 不计到期独立复测" }
         if kind == "original" { return "原局面重试 · 不计新题掌握" }
         if early { return "提前练习 · 不计到期掌握" }
         return "本机未记录的新局面 · 到期复习"
     }
     var resultLabel: String {
+        if demonstration == true {
+            guard let outcome else { return "示例 · 尚未提交" }
+            return "示例 · " + (outcome == "skipped" ? "已跳过" : outcome == "correct" ? "答对" : "未答对") + (hintAt != nil ? " · 用过提示" : " · 未用提示") + " · 不计个人进度"
+        }
         if outcome == "skipped" { return "已跳过 · 不计对错或掌握" }
         guard let outcome else { return "尚未提交" }
         let result = outcome == "correct" ? "答对" : "未答对"
@@ -71,7 +86,7 @@ struct ReforgeSession: Codable, Identifiable {
         return "无提示\(early ? "提前练习" : kind == "original" ? "原题重试" : "作答") · \(result) · 未增加掌握"
     }
 }
-struct ReforgeSeen: Codable { let key: String; let puzzleID: String; let version: Int; let at: Date }
+struct ReforgeSeen: Codable { let key: String; let puzzleID: String; let version: Int; let at: Date; var source: String? = nil }
 struct DecisionArchive: Codable {
     var schemaVersion = 1
     var notes: [DecisionNote] = []
@@ -126,11 +141,14 @@ final class ReforgeRules {
     private let rules: ReforgeRules?
     private var readable = true
     private let clockOrigin: String
+    let demonstration: Bool
+    private let exposureRecorder: ((ReforgeSeen) throws -> Void)?
     var now: Date { clock() }
     var catalog: [ReforgePuzzle] { data.catalog }
-    init(file: URL? = nil, clock: @escaping () -> Date = Date.init, catalog: [ReforgePuzzle]? = nil, clockOrigin: String = "device clock") {
+    init(file: URL? = nil, clock: @escaping () -> Date = Date.init, catalog: [ReforgePuzzle]? = nil, clockOrigin: String = "device clock", demonstration: Bool = false, exposureRecorder: ((ReforgeSeen) throws -> Void)? = nil) {
         self.file = file ?? FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("YiwaiPractice/decisions-v1.json")
         self.clock = clock; self.clockOrigin = clockOrigin
+        self.demonstration = demonstration; self.exposureRecorder = exposureRecorder
         rules = try? ReforgeRules()
         do {
             if FileManager.default.fileExists(atPath:self.file.path) {
@@ -170,6 +188,24 @@ final class ReforgeRules {
         if !skipped { next.items.append(ReforgeItem(id:UUID(),decisionID:note.id,dueAt:time.addingTimeInterval(86400))) }
         try save(next); return note
     }
+    func appendRecollection(noteID: UUID, candidates: String, reason: String, skipped: Bool = false) throws {
+        guard let i = data.notes.firstIndex(where:{$0.id == noteID}), !data.notes[i].skipped,
+              (data.notes[i].recollections?.count ?? 0) < 10 else { throw ChessFailure.invalid("此处暂不可继续补记；已有记录仍保留。") }
+        guard candidates.count <= 1000, reason.count <= 4000,
+              skipped || !candidates.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty || !reason.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty else {
+            throw ChessFailure.invalid("写下候选着或理由，也可以跳过；候选着最多 1,000 字，理由最多 4,000 字。")
+        }
+        var next = data
+        var additions = next.notes[i].recollections ?? []
+        additions.append(.init(id:UUID(),candidates:skipped ? "" : candidates,reason:skipped ? "" : reason,recordedAt:now,skipped:skipped,context:"afterFeedback"))
+        next.notes[i].recollections = additions
+        try save(next)
+    }
+    /// Only exposure is shared from the demo, so a displayed position cannot later be called unseen.
+    func recordExposure(_ exposure: ReforgeSeen) throws {
+        guard !data.seen.contains(where:{$0.key == exposure.key}) else { return }
+        var next = data; next.seen.append(exposure); try save(next)
+    }
     func changeTag(noteID: UUID, tag: DecisionTag) throws {
         guard let index = data.notes.firstIndex(where:{$0.id == noteID}), !data.notes[index].skipped else { throw ChessFailure.invalid("这条记录无法修改标签。") }
         if data.notes[index].tag == tag { return }
@@ -198,9 +234,12 @@ final class ReforgeRules {
             }
             puzzle = candidate
         }
-        let session = ReforgeSession(id:UUID(),itemID:itemID,puzzle:puzzle,kind:original ? "original" : practice ? "practice" : "new",startedAt:now,dueAtStart:data.items[i].dueAt,tagAtStart:note.tag)
+        var session = ReforgeSession(id:UUID(),itemID:itemID,puzzle:puzzle,kind:original ? "original" : practice ? "practice" : "new",startedAt:now,dueAtStart:data.items[i].dueAt,tagAtStart:note.tag)
+        session.demonstration = demonstration ? true : nil
+        let exposure = ReforgeSeen(key:ReforgeRules.key(puzzle.fen),puzzleID:puzzle.id,version:puzzle.version,at:session.startedAt,source:demonstration ? "interactive-demo" : nil)
+        try exposureRecorder?(exposure)
         var next = data; next.sessions.append(session); next.items[i].waitingReason = nil
-        next.seen.append(.init(key:ReforgeRules.key(puzzle.fen),puzzleID:puzzle.id,version:puzzle.version,at:session.startedAt))
+        next.seen.append(exposure)
         try save(next); return session
     }
     private func waiting(_ index: Int, _ reason: String) throws -> ReforgeSession? {
@@ -222,7 +261,7 @@ final class ReforgeRules {
         }
         session.firstMove = skipped ? nil : move; session.submittedAt = now
         session.outcome = skipped ? "skipped" : session.puzzle.answers.contains(move ?? "") ? "correct" : "incorrect"
-        session.countedIndependent = !skipped && session.outcome == "correct" && session.hintAt == nil && !session.early && session.kind == "new"
+        session.countedIndependent = session.demonstration != true && !skipped && session.outcome == "correct" && session.hintAt == nil && !session.early && session.kind == "new"
         var next = data; next.sessions[i] = session
         if session.countedIndependent { next.items[itemIndex].independentPasses += 1 }
         else if !skipped { next.items[itemIndex].independentPasses = 0 }
@@ -249,7 +288,6 @@ final class ReforgeRules {
     }
     /// Called only after the user accepts this concrete evidence. Never fabricates a reason.
     func createEvidencePlan(_ evidence: MateEvidence, game: GameRecord) throws -> ReforgeItem {
-        if let existing = plan(for:evidence) { return existing }
         guard let rules, evidence.gameID == game.id, evidence.gameKey == MatePatternDetector.gameKey(game),
               let scan = data.scans?.first(where:{$0.gameKey == evidence.gameKey}),
               scan.evidence.contains(evidence) else {
@@ -257,6 +295,7 @@ final class ReforgeRules {
         }
         guard try rules.mateMoves(evidence.fen) == evidence.answers.sorted(), !evidence.answers.isEmpty,
               !evidence.answers.contains(evidence.played) else { throw ChessFailure.invalid("证据未通过棋规复核。") }
+        if let existing = plan(for:evidence) { return existing }
         let date = now
         if let index = data.notes.firstIndex(where:{$0.gameID == game.id && $0.ply == evidence.ply}) {
             let previous = data.notes[index]

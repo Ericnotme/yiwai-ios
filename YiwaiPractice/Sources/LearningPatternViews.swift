@@ -37,7 +37,7 @@ struct GamePatternView: View {
     @State private var error: String?
     @State private var itemID: UUID?
     @State private var showPlan = false
-    private var scan: GamePatternScan? { decisions.data.scans?.first { $0.gameKey == MatePatternDetector.gameKey(record) } }
+    private var scan: GamePatternScan? { decisions.data.scans?.first { $0.gameKey == MatePatternDetector.gameKey(record) && $0.side == side } }
     var body: some View {
         ScrollView {
             VStack(alignment:.leading,spacing:18) {

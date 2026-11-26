@@ -44,7 +44,7 @@ struct GameBoard: View {
                             return String(Array("abcdefgh")[flipped ? 7-column : column])+String(flipped ? row+1 : 8-row)
                         }
                         if let from = square(value.startLocation), let to = square(value.location), from != to { drag(from,to) }
-                    })
+                    }, including: enabled ? .all : .none)
             }.aspectRatio(1,contentMode:.fit)
             HStack(spacing:0) { ForEach(flipped ? Array("hgfedcba") : Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2).frame(maxWidth:.infinity) } }.foregroundStyle(.secondary).accessibilityHidden(true)
         }

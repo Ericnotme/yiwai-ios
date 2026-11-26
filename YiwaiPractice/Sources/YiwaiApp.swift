@@ -4,6 +4,8 @@ import SwiftUI
     @StateObject private var notebook: Notebook
     @StateObject private var game: GameController
     @StateObject private var decisions: DecisionStore
+    @StateObject private var conditionStudy: ConditionStudyStore
+    @StateObject private var personal: PersonalStore
     init() {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-simulate-no-network") {
@@ -39,9 +41,15 @@ import SwiftUI
         }
         #endif
         _decisions = StateObject(wrappedValue:DecisionStore(file:decisionFile,clock:decisionClock,clockOrigin:clockOrigin))
+        let conditionFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-conditions.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let conditionFile { try? FileManager.default.removeItem(at:conditionFile) }
+        let personalFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-personal.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let personalFile { try? FileManager.default.removeItem(at:personalFile) }
+        _personal = StateObject(wrappedValue:PersonalStore(file:personalFile,clock:decisionClock,clockOrigin:clockOrigin))
+        _conditionStudy = StateObject(wrappedValue:ConditionStudyStore(file:conditionFile,clock:decisionClock,clockOrigin:clockOrigin))
     }
     var body: some Scene {
-        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).tint(Palette.coral).preferredColorScheme(.light) }
+        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).environmentObject(conditionStudy).environmentObject(personal).tint(Palette.coral).preferredColorScheme(.light) }
     }
 }
 #if DEBUG
@@ -62,12 +70,13 @@ enum Palette {
 struct RootView: View {
     @EnvironmentObject var notebook: Notebook
     @EnvironmentObject var game: GameController
-    @State private var tab = 0
+    @State private var tab = 5
     @State private var lessonIndex = 0
     @State private var positionIndex = 0
     @State private var session = UUID()
     var body: some View {
         TabView(selection:$tab) {
+            LearningHomeView().tabItem { Label("学习",systemImage:"arrow.triangle.2.circlepath") }.tag(5)
             GamePlayView().tabItem { Label("下棋",systemImage:"checkerboard.rectangle") }.tag(3)
             GameHistoryView { id in tab = 3; game.resume(id) }.tabItem { Label("棋谱",systemImage:"books.vertical") }.tag(4)
             PracticeView(lessonIndex:$lessonIndex,positionIndex:$positionIndex,session:$session).id(session)
@@ -77,7 +86,6 @@ struct RootView: View {
                     if let j = lesson.positions.firstIndex(where:{$0.id == id}) { lessonIndex = i; positionIndex = j; session = UUID(); tab = 0; break }
                 }
             }.tabItem { Label("错题本",systemImage:"bookmark") }.tag(1)
-            AboutView().tabItem { Label("关于",systemImage:"leaf") }.tag(2)
         }
         .alert("棋谱提示",isPresented:Binding(get:{game.errorMessage != nil},set:{if !$0 { game.errorMessage = nil }})) { Button("知道了",role:.cancel) { game.errorMessage = nil } } message: { Text(game.errorMessage ?? "") }
         .alert("本地保存提示",isPresented:Binding(get:{notebook.errorMessage != nil},set:{if !$0 { notebook.errorMessage = nil }})) {
@@ -117,20 +125,6 @@ struct PracticeView: View {
                         Spacer()
                         Button { chooseLesson = true } label: { Label("换题",systemImage:"square.grid.2x2").font(.subheadline.weight(.medium)).padding(12).background(.white,in:Capsule()) }.accessibilityIdentifier("chooseLesson")
                     }
-                    NavigationLink {
-                        FortressLabView()
-                    } label: {
-                        HStack(alignment: .center, spacing: 12) {
-                            Image(systemName: "shield.lefthalf.filled").font(.title2).foregroundStyle(Palette.sage)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("不败空间").font(.headline).foregroundStyle(Palette.ink)
-                                Text("预测 · 攻防 · 反例").font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
-                        }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.white, in: RoundedRectangle(cornerRadius: 16))
-                    }.buttonStyle(.plain).accessibilityIdentifier("fortressEntry")
                     HStack { Text("\(String(format:"%02d",lessonIndex + 1))  /  \(lesson.title)").font(.subheadline.weight(.semibold)); Spacer(); Text("\(positionIndex + 1) / 3").font(.caption.monospacedDigit()).foregroundStyle(.secondary) }
                     VStack(alignment:.leading,spacing:12) {
                         HStack { Label("白先",systemImage:"circle.fill").font(.caption.weight(.semibold)); Spacer(); Text(answer == nil ? position.label : "逐步回放 · \(frameIndex) / \(frames.count - 1)").font(.caption).foregroundStyle(.secondary) }
@@ -307,7 +301,7 @@ struct AboutView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section("内容与许可") {
-                    Text("局面与讲解改编自弈外 / Knight Room 的原创练习。棋规使用 chess.js 1.4.0；对弈电脑为 Seed 0.2，未评级；复盘使用 Stockfish.js 19 lite。教练依据棋规和引擎讲解，不是大模型。原生页面参考 Lichess 的棋盘与操作布局，保留弈外设计；未复制其代码或图标。")
+                    Text("练习内容包含弈外 / Knight Room 的原创练习。不败空间基于经典错色象车兵残局；原创部分是交互、题目组织与防守规则实现，不主张残局结论为本项目首创，也不声称解决国际象棋初始局面。棋规使用 chess.js 1.4.0；对弈电脑为 Seed 0.2，未评级；复盘使用 Stockfish.js 19 lite。教练依据棋规和引擎讲解，不是大模型。原生页面参考 Lichess 的棋盘与操作布局，保留弈外设计；未复制其代码或图标。")
                     Button("查看 chess.js BSD-2-Clause 许可") { openLicense("chess-LICENSE") }
                     Button("查看 Stockfish GPL-3.0 许可") { openLicense("stockfish19-LICENSE",directory:"Stockfish") }
                     if let url = Bundle.main.url(forResource:"stockfish19-source",withExtension:"tar.gz",subdirectory:"Stockfish") {

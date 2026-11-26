@@ -16,6 +16,8 @@ final class TimeCapsuleUITests: XCTestCase {
         app.buttons["importPosition"].tap(); app.buttons["PGN 棋谱"].tap()
         let input = app.textViews["importText"]
         input.tap(); input.typeText("1. e4 {Local original comment} (1. d4 d5) e5 2. Nf3 Nc6 *")
+        if app.buttons["收起键盘"].exists { app.buttons["收起键盘"].tap() }
+        reveal(app,app.buttons["confirmImport"])
         app.buttons["confirmImport"].tap()
         XCTAssertTrue(app.buttons["editPersonalNote"].waitForExistence(timeout:10))
         app.buttons["editPersonalNote"].tap()
@@ -38,13 +40,23 @@ final class TimeCapsuleUITests: XCTestCase {
         capture(app,"capsule-02-overview")
         reveal(app,app.buttons["exportCapsule"]); app.buttons["exportCapsule"].tap()
         let filename = app.textFields["DOCPicker.filenameTextField"]
-        XCTAssertTrue(filename.waitForExistence(timeout:15),app.debugDescription)
         // Save synthetic test data only, and only when the local device destination is visible.
-        XCTAssertTrue(app.navigationBars.staticTexts["我的iPhone"].exists)
+        // Newer document pickers omit the legacy filename field; their locale
+        // follows the simulator rather than the app's Chinese content.
+        let localDestination = app.navigationBars.staticTexts.matching(
+            NSPredicate(format: "label IN %@", ["我的iPhone", "我的 iPhone", "On My iPhone", "我的iPad", "我的 iPad", "On My iPad"])
+        ).firstMatch
+        XCTAssertTrue(localDestination.waitForExistence(timeout:20),app.debugDescription)
         XCTAssertFalse(app.staticTexts["capsuleError"].exists)
         capture(app,"capsule-03-system-file-export")
-        filename.tap(); filename.typeText("-UITest-"+String(UUID().uuidString.prefix(8)))
-        app.navigationBars.buttons["保存"].tap()
+        if filename.exists {
+            filename.tap(); filename.typeText("-UITest-"+String(UUID().uuidString.prefix(8)))
+        }
+        let save = app.navigationBars.buttons.matching(
+            NSPredicate(format: "label IN %@", ["保存", "Save"])
+        ).firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout:5)); XCTAssertTrue(save.isEnabled)
+        save.tap()
         XCTAssertTrue(app.staticTexts["capsuleResult"].waitForExistence(timeout:10))
         XCTAssertTrue(app.staticTexts["capsuleResult"].label.contains("已导出"))
         capture(app,"capsule-06-export-saved")

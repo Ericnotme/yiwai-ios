@@ -25,7 +25,7 @@ final class TimeCapsuleTests: XCTestCase {
         let attachment = XCTAttachment(data:data,uniformTypeIdentifier:"public.json")
         attachment.name = "sample-time-capsule-synthetic-only.json"; attachment.lifetime = .keepAlways; add(attachment)
         let decoded = try decoder.decode(TimeCapsule.self,from:data)
-        XCTAssertEqual(decoded.format,"yiwai-local-time-capsule"); XCTAssertEqual(decoded.schemaVersion,2)
+        XCTAssertEqual(decoded.format,"yiwai-local-time-capsule"); XCTAssertEqual(decoded.schemaVersion,4)
         XCTAssertEqual(decoded.games.count,3); XCTAssertEqual(decoded.gamePGN.count,3)
         XCTAssertEqual(decoded.games.first(where:{$0.id == imported.id})?.originalPGN,pgn)
         XCTAssertEqual(decoded.games.first(where:{$0.id == imported.id})?.personalNote,note)

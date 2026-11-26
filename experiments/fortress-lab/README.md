@@ -20,11 +20,13 @@ python3 generate_fixtures.py /path/to/reviewed/verify_corner.py | /tmp/yiwai-for
 ```
 Review the Python generator before executing. Its reference source is in [CHECKMATE V2 PR #3](https://github.com/Ericnotme/weijia-open-studio/pull/3) at project-checkmate/submissions/Ericnotme/SC-007/corner-shelter-v2/verify_corner.py. The separate [V3 PR #4](https://github.com/Ericnotme/weijia-open-studio/pull/4) reproduces the V2 counts in C++ and explores predecessor expansion. Classical wrong-color bishop/rook-pawn endgame; neither proves the full chess initial position.
 
-## Release-blocker evidence
+## Historical public-snapshot evidence
+
+This section records the earlier public-source prototype. The current integrated candidate and live account observations are in [release gates](../../docs/fortress-release-gates.md) and [source reconciliation](../../docs/fortress-source-reconciliation.md).
 
 Public main at 28da97a4094897a1a736eade4ea9bdfedb961075 corresponds to 0.4.0 (10), and no newer source is available on that branch. Historical project records indicate later build/review attempts, not verified in App Store Connect in this session. Do not overwrite a newer local Xcode project with this older snapshot. The old public TestFlight URL resolves to a page named 弈外练习 with an older source link to yiwai-ios; an invitation page does not prove the current build number, entitlement to install, or formal App Store availability.
 
-Apple current guidelines: https://developer.apple.com/app-store/review/guidelines/ . 4.3(a) specifically addresses multiple bundle IDs of the same app; 4.3(b) covers indistinguishable apps. Obtain the actual reviewer message and exact target app/bundle/version before deciding whether to consolidate, clarify, or resubmit. Do not create a new bundle to bypass review. Keep the feature in the existing intended YiWai app, and distinguish any other chess products by actual functionality or consolidate if they are duplicative. Do not delete app records or alter accounts, agreements or signing without authorization.
+Apple guidelines: https://developer.apple.com/app-store/review/guidelines/ . The actual formal and TestFlight rejection messages observed on 2026-11-26 cite 4.3(a) and similarities to submissions by other developers; they do not identify a particular competitor or establish duplicate bundles within this account. The actual reviewer message and exact target app/bundle/version determine the response. Do not create a new bundle to bypass review. Keep the feature in the existing intended YiWai app, and distinguish any other chess products by actual functionality or consolidate if they are duplicative. Do not delete app records or alter accounts, agreements or signing without authorization.
 
 ## Next acceptance gates
 
@@ -38,4 +40,4 @@ Apple current guidelines: https://developer.apple.com/app-store/review/guideline
 
 Hello App Review team, thank you for reviewing YiWai. We would like to address the specific concern rather than resubmit the same build. Could you clarify which app record, bundle ID, or similarity you identified under Guideline 4.3(a), and whether the issue concerns duplication within our account or another aspect of the submission? Our intention is to maintain one coherent product for chess learning, not multiple variants of the same app. We will use your clarification to resolve any duplication and provide a clear walkthrough of the implemented learning workflow in our next candidate. Thank you.
 
-Status: isolated portable core prototype, **not integrated into the native app target, not signed, not uploaded, not reviewed**. No public app metadata or main branch changes.
+Current local status: the portable policy and native Fortress lesson are selectively integrated into the preserved production-bundle 0.4.3 source. This candidate is **not signed, not uploaded, not reviewed**. Public main, PR #2 and App Store metadata remain unchanged. Historical core-test counts above are separate from the current integrated native validation.

@@ -1,4 +1,6 @@
-# 构建 0.4.0（10）
+> **2026-11-26 local Fortress integration:** candidate 0.4.4 (14), based on the preserved 0.4.3 (13) source `aed8347`; must not be uploaded before release gates are complete. Earlier version headings below are historical. See [source reconciliation](docs/fortress-source-reconciliation.md) and [release gates](docs/fortress-release-gates.md).
+
+# 构建 0.4.2（12）
 
 ## 原生应用
 

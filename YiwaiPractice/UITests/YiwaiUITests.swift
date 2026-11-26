@@ -7,6 +7,7 @@ final class YiwaiUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["-ui-testing","-reset-test-data"]
         app.launch()
+        app.tabBars.buttons["练一题"].tap()
     }
     func capture(_ name: String) {
         let attachment = XCTAttachment(screenshot:app.screenshot())
@@ -63,7 +64,8 @@ final class YiwaiUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["question"].label.contains("Qg7"))
         app.buttons["answerNotMate"].tap()
         XCTAssertEqual(app.staticTexts["answerResult"].label,"判断正确")
-        app.tabBars.buttons["关于"].tap()
+        app.tabBars.buttons["学习"].tap()
+        reveal(app.buttons["learningAbout"]); app.buttons["learningAbout"].tap()
         let privacy = app.buttons["privacyPolicy"]
         reveal(privacy); privacy.tap()
         XCTAssertTrue(app.navigationBars["隐私政策"].waitForExistence(timeout:5))
@@ -95,6 +97,7 @@ final class YiwaiUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["-ui-testing","-reset-test-data","-simulate-no-network"]
         app.launch()
+        app.tabBars.buttons["练一题"].tap()
         XCTAssertTrue(app.buttons["answerNotMate"].waitForExistence(timeout:10))
         app.buttons["answerNotMate"].tap()
         reveal(app.buttons["nextFrame"])

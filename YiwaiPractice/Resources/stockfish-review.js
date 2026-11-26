@@ -87,5 +87,18 @@ window.YiwaiStockfish = (() => {
       return JSON.stringify(YiwaiReview.build({...input,metric:YiwaiReview.metric,engine:YiwaiReview.engine},evaluations));
     }finally{stop();}
   }
-  return {run,stop};
+  async function probe(input,source,wasm){
+    if(![450,1400].includes(input.duration))throw Error('分析质量无效');
+    const position=YiwaiReview.position(input.initialFEN,input.history);
+    if(YiwaiReview.terminal(position))throw Error('终局不能作为候选题');
+    await initialize(source,wasm);
+    try {
+      const started=performance.now();
+      const raw=await search(input.initialFEN,input.history,input.duration);
+      return JSON.stringify({evaluation:{...YiwaiReview.normalize(raw,position),legalCount:position.moves().length},
+        rawScore:raw.score,elapsedMS:Math.round(performance.now()-started),stopReason:'bestmove after go movetime; last exact UCI info',
+        budgetMS:input.duration,history:input.history,initialFEN:input.initialFEN});
+    } finally {stop();}
+  }
+  return {run,probe,stop};
 })();

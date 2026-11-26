@@ -1,3 +1,15 @@
+> **2026-11-26 local Fortress integration:** candidate 0.4.4 (14), based on the preserved 0.4.3 (13) source `aed8347`; must not be uploaded before release gates are complete. Earlier version headings below are historical. See [source reconciliation](docs/fortress-source-reconciliation.md) and [release gates](docs/fortress-release-gates.md).
+
+# 弈外 / Second Look Chess
+
+## 0.4.2（12）条件对照实验（本地验收通过，未上传）
+
+在原学习闭环上加入自愿的条件对照：三种经典结构、12 个合法条件局面，先保留首答再统一反馈；实际结束 24 小时后提供四个本机未见局面。保留提示/示例/已见排除、相反证据、独立重试和完整本地导出。16 题均有合法 PGN、完整一步杀枚举及 Stockfish 复核；不测心理、不宣称学习效果。详见 [实现与边界](docs/condition-study.md)。尚未上传本版本。
+
+## 保留的 0.4.1（11）审核体验改进
+
+默认「学习」首页提供本人 PGN 路径和可操作的构造棋谱示例；规则证据与候选着/理由可连接，新增明确标注为看过反馈后的事后补记。示例只模拟流程，不代表真人棋局或真实学习效果，详细复现路径、限制和审核草稿见 [审核演示](docs/app-review-demo.md)。0.4.0（10）签名和已提交 Beta 流程不受此分支影响，本版本尚未上传。
+
 # 弈外 · iPhone 原生版
 
 离线人机对弈、棋题、棋谱回放和中文复盘。本地分支基于 **0.3.6（9）FEN/PGN 导入版**，本轮 **0.4.0（10）** 在原分支继续整合[时间胶囊原型](docs/local-time-capsule.md)及[决策回炉原型](docs/decision-reforge.md)：手动 PGN、个人备注、决策理由、新局面复习与完整本地 JSON 导出。

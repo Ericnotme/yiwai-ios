@@ -1,0 +1,465 @@
+{
+  "schemaVersion": 1,
+  "experimental": true,
+  "source": "本项目选编的合法 PGN 证明；包含经典将死结构，不宣称结构独创；只保存走法，无第三方注释",
+  "license": "GPL-3.0-or-later（本项目题目数据与说明）；第三方棋规与引擎保留原许可",
+  "families": [
+    {
+      "id": "queen-bishop",
+      "title": "后与象的协同",
+      "relation": "h6 黑马是否能吃掉 f7 的将军后"
+    },
+    {
+      "id": "king-diagonal",
+      "title": "王前斜线的遮挡",
+      "relation": "g 兵是否仍遮住 h4 至 e1 的斜线"
+    },
+    {
+      "id": "pinned-pawn",
+      "title": "能吃将军子的兵是否被牵制",
+      "relation": "e7 黑后是否牵制 e2 白兵，使其不能吃 d3 的马"
+    }
+  ],
+  "positions": [
+    {
+      "id": "queen-bishop-A",
+      "version": 1,
+      "pgn": "1. e3 e5 2. d4 exd4 3. Bc4 a6 4. Qh5 b6 *",
+      "fen": "rnbqkbnr/2pp1ppp/pp6/7Q/2Bp4/4P3/PPP2PPP/RNB1K1NR w KQkq - 0 5",
+      "proofMoves": [
+        "e2e3",
+        "e7e5",
+        "d2d4",
+        "e5d4",
+        "f1c4",
+        "a7a6",
+        "d1h5",
+        "b7b6"
+      ],
+      "answers": [
+        "h5f7"
+      ],
+      "family": "queen-bishop",
+      "condition": "A",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": "h5f7",
+      "distractingCapture": "h5e5",
+      "relation": "h6 黑马是否能吃掉 f7 的将军后"
+    },
+    {
+      "id": "queen-bishop-B",
+      "version": 1,
+      "pgn": "1. e3 e5 2. d4 a6 3. Bc4 a5 4. Qh5 b6 *",
+      "fen": "rnbqkbnr/2pp1ppp/1p6/p3p2Q/2BP4/4P3/PPP2PPP/RNB1K1NR w KQkq - 0 5",
+      "proofMoves": [
+        "e2e3",
+        "e7e5",
+        "d2d4",
+        "a7a6",
+        "f1c4",
+        "a6a5",
+        "d1h5",
+        "b7b6"
+      ],
+      "answers": [
+        "h5f7"
+      ],
+      "family": "queen-bishop",
+      "condition": "B",
+      "captureOpportunity": true,
+      "defenseChanged": false,
+      "critical": "h5f7",
+      "distractingCapture": "h5e5",
+      "relation": "h6 黑马是否能吃掉 f7 的将军后"
+    },
+    {
+      "id": "queen-bishop-C",
+      "version": 1,
+      "pgn": "1. e3 e5 2. d4 exd4 3. Bc4 Nh6 4. Qh5 b6 *",
+      "fen": "rnbqkb1r/p1pp1ppp/1p5n/7Q/2Bp4/4P3/PPP2PPP/RNB1K1NR w KQkq - 0 5",
+      "proofMoves": [
+        "e2e3",
+        "e7e5",
+        "d2d4",
+        "e5d4",
+        "f1c4",
+        "g8h6",
+        "d1h5",
+        "b7b6"
+      ],
+      "answers": [],
+      "family": "queen-bishop",
+      "condition": "C",
+      "captureOpportunity": false,
+      "defenseChanged": true,
+      "critical": "h5f7",
+      "distractingCapture": "h5e5",
+      "relation": "h6 黑马是否能吃掉 f7 的将军后"
+    },
+    {
+      "id": "queen-bishop-D",
+      "version": 1,
+      "pgn": "1. e3 e5 2. d4 a6 3. Bc4 Nh6 4. Qh5 b6 *",
+      "fen": "rnbqkb1r/2pp1ppp/pp5n/4p2Q/2BP4/4P3/PPP2PPP/RNB1K1NR w KQkq - 0 5",
+      "proofMoves": [
+        "e2e3",
+        "e7e5",
+        "d2d4",
+        "a7a6",
+        "f1c4",
+        "g8h6",
+        "d1h5",
+        "b7b6"
+      ],
+      "answers": [],
+      "family": "queen-bishop",
+      "condition": "D",
+      "captureOpportunity": true,
+      "defenseChanged": true,
+      "critical": "h5f7",
+      "distractingCapture": "h5e5",
+      "relation": "h6 黑马是否能吃掉 f7 的将军后"
+    },
+    {
+      "id": "king-diagonal-A",
+      "version": 1,
+      "pgn": "1. f3 e5 2. g4 *",
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2",
+      "proofMoves": [
+        "f2f3",
+        "e7e5",
+        "g2g4"
+      ],
+      "answers": [
+        "d8h4"
+      ],
+      "family": "king-diagonal",
+      "condition": "A",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": "d8h4",
+      "distractingCapture": "e5f4",
+      "relation": "g 兵是否仍遮住 h4 至 e1 的斜线"
+    },
+    {
+      "id": "king-diagonal-B",
+      "version": 1,
+      "pgn": "1. f4 e5 2. g4 *",
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/5PP1/8/PPPPP2P/RNBQKBNR b KQkq - 0 2",
+      "proofMoves": [
+        "f2f4",
+        "e7e5",
+        "g2g4"
+      ],
+      "answers": [
+        "d8h4"
+      ],
+      "family": "king-diagonal",
+      "condition": "B",
+      "captureOpportunity": true,
+      "defenseChanged": false,
+      "critical": "d8h4",
+      "distractingCapture": "e5f4",
+      "relation": "g 兵是否仍遮住 h4 至 e1 的斜线"
+    },
+    {
+      "id": "king-diagonal-C",
+      "version": 1,
+      "pgn": "1. f3 e5 2. g3 *",
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/8/5PP1/PPPPP2P/RNBQKBNR b KQkq - 0 2",
+      "proofMoves": [
+        "f2f3",
+        "e7e5",
+        "g2g3"
+      ],
+      "answers": [],
+      "family": "king-diagonal",
+      "condition": "C",
+      "captureOpportunity": false,
+      "defenseChanged": true,
+      "critical": "d8h4",
+      "distractingCapture": "e5f4",
+      "relation": "g 兵是否仍遮住 h4 至 e1 的斜线"
+    },
+    {
+      "id": "king-diagonal-D",
+      "version": 1,
+      "pgn": "1. f4 e5 2. g3 *",
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/5P2/6P1/PPPPP2P/RNBQKBNR b KQkq - 0 2",
+      "proofMoves": [
+        "f2f4",
+        "e7e5",
+        "g2g3"
+      ],
+      "answers": [],
+      "family": "king-diagonal",
+      "condition": "D",
+      "captureOpportunity": true,
+      "defenseChanged": true,
+      "critical": "d8h4",
+      "distractingCapture": "e5f4",
+      "relation": "g 兵是否仍遮住 h4 至 e1 的斜线"
+    },
+    {
+      "id": "pinned-pawn-A",
+      "version": 1,
+      "pgn": "1. d4 Nf6 2. c4 e5 3. dxe5 Ng4 4. Nh3 Nc6 5. Bf4 Bb4+ 6. Nbd2 Qe7 7. a3 Ngxe5 8. axb4 *",
+      "fen": "r1b1k2r/ppppqppp/2n5/4n3/1PP2B2/7N/1P1NPPPP/R2QKB1R b KQkq - 0 8",
+      "proofMoves": [
+        "d2d4",
+        "g8f6",
+        "c2c4",
+        "e7e5",
+        "d4e5",
+        "f6g4",
+        "g1h3",
+        "b8c6",
+        "c1f4",
+        "f8b4",
+        "b1d2",
+        "d8e7",
+        "a2a3",
+        "g4e5",
+        "a3b4"
+      ],
+      "answers": [
+        "e5d3"
+      ],
+      "family": "pinned-pawn",
+      "condition": "A",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": "e5d3",
+      "distractingCapture": "e5f3",
+      "relation": "e7 黑后是否牵制 e2 白兵，使其不能吃 d3 的马"
+    },
+    {
+      "id": "pinned-pawn-B",
+      "version": 1,
+      "pgn": "1. d4 Nf6 2. c4 e5 3. dxe5 Ng4 4. Nf3 Nc6 5. Bf4 Bb4+ 6. Nbd2 Qe7 7. a3 Ngxe5 8. axb4 *",
+      "fen": "r1b1k2r/ppppqppp/2n5/4n3/1PP2B2/5N2/1P1NPPPP/R2QKB1R b KQkq - 0 8",
+      "proofMoves": [
+        "d2d4",
+        "g8f6",
+        "c2c4",
+        "e7e5",
+        "d4e5",
+        "f6g4",
+        "g1f3",
+        "b8c6",
+        "c1f4",
+        "f8b4",
+        "b1d2",
+        "d8e7",
+        "a2a3",
+        "g4e5",
+        "a3b4"
+      ],
+      "answers": [
+        "e5d3"
+      ],
+      "family": "pinned-pawn",
+      "condition": "B",
+      "captureOpportunity": true,
+      "defenseChanged": false,
+      "critical": "e5d3",
+      "distractingCapture": "e5f3",
+      "relation": "e7 黑后是否牵制 e2 白兵，使其不能吃 d3 的马"
+    },
+    {
+      "id": "pinned-pawn-C",
+      "version": 1,
+      "pgn": "1. d4 Nf6 2. c4 e5 3. dxe5 Ng4 4. Nh3 Nc6 5. Bf4 Bb4+ 6. Nbd2 d6 7. a3 Ngxe5 8. axb4 *",
+      "fen": "r1bqk2r/ppp2ppp/2np4/4n3/1PP2B2/7N/1P1NPPPP/R2QKB1R b KQkq - 0 8",
+      "proofMoves": [
+        "d2d4",
+        "g8f6",
+        "c2c4",
+        "e7e5",
+        "d4e5",
+        "f6g4",
+        "g1h3",
+        "b8c6",
+        "c1f4",
+        "f8b4",
+        "b1d2",
+        "d7d6",
+        "a2a3",
+        "g4e5",
+        "a3b4"
+      ],
+      "answers": [],
+      "family": "pinned-pawn",
+      "condition": "C",
+      "captureOpportunity": false,
+      "defenseChanged": true,
+      "critical": "e5d3",
+      "distractingCapture": "e5f3",
+      "relation": "e7 黑后是否牵制 e2 白兵，使其不能吃 d3 的马"
+    },
+    {
+      "id": "pinned-pawn-D",
+      "version": 1,
+      "pgn": "1. d4 Nf6 2. c4 e5 3. dxe5 Ng4 4. Nf3 Nc6 5. Bf4 Bb4+ 6. Nbd2 d6 7. a3 Ngxe5 8. axb4 *",
+      "fen": "r1bqk2r/ppp2ppp/2np4/4n3/1PP2B2/5N2/1P1NPPPP/R2QKB1R b KQkq - 0 8",
+      "proofMoves": [
+        "d2d4",
+        "g8f6",
+        "c2c4",
+        "e7e5",
+        "d4e5",
+        "f6g4",
+        "g1f3",
+        "b8c6",
+        "c1f4",
+        "f8b4",
+        "b1d2",
+        "d7d6",
+        "a2a3",
+        "g4e5",
+        "a3b4"
+      ],
+      "answers": [],
+      "family": "pinned-pawn",
+      "condition": "D",
+      "captureOpportunity": true,
+      "defenseChanged": true,
+      "critical": "e5d3",
+      "distractingCapture": "e5f3",
+      "relation": "e7 黑后是否牵制 e2 白兵，使其不能吃 d3 的马"
+    },
+    {
+      "id": "transfer-legal",
+      "version": 1,
+      "pgn": "1. e4 e5 2. Nf3 d6 3. Bc4 Bg4 4. Nc3 Nc6 5. Nxe5 Bxd1 6. Bxf7+ Ke7 *",
+      "fen": "r2q1bnr/ppp1kBpp/2np4/4N3/4P3/2N5/PPPP1PPP/R1BbK2R w KQ - 1 7",
+      "proofMoves": [
+        "e2e4",
+        "e7e5",
+        "g1f3",
+        "d7d6",
+        "f1c4",
+        "c8g4",
+        "b1c3",
+        "b8c6",
+        "f3e5",
+        "g4d1",
+        "c4f7",
+        "e8e7"
+      ],
+      "answers": [
+        "c3d5"
+      ],
+      "family": "transfer",
+      "condition": "transfer",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": null,
+      "distractingCapture": null,
+      "relation": "到期后在不同局面重新核对全部合法应对；不归因于某种心理特征"
+    },
+    {
+      "id": "transfer-back-rank",
+      "version": 1,
+      "pgn": "1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 *",
+      "fen": "1n2kb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 w k - 0 17",
+      "proofMoves": [
+        "e2e4",
+        "e7e5",
+        "g1f3",
+        "d7d6",
+        "d2d4",
+        "c8g4",
+        "d4e5",
+        "g4f3",
+        "d1f3",
+        "d6e5",
+        "f1c4",
+        "g8f6",
+        "f3b3",
+        "d8e7",
+        "b1c3",
+        "c7c6",
+        "c1g5",
+        "b7b5",
+        "c3b5",
+        "c6b5",
+        "c4b5",
+        "b8d7",
+        "e1c1",
+        "a8d8",
+        "d1d7",
+        "d8d7",
+        "h1d1",
+        "e7e6",
+        "b5d7",
+        "f6d7",
+        "b3b8",
+        "d7b8"
+      ],
+      "answers": [
+        "d1d8"
+      ],
+      "family": "transfer",
+      "condition": "transfer",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": null,
+      "distractingCapture": null,
+      "relation": "到期后在不同局面重新核对全部合法应对；不归因于某种心理特征"
+    },
+    {
+      "id": "transfer-castled",
+      "version": 1,
+      "pgn": "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7 5. e3 O-O 6. Nf3 h6 7. Bh4 b6 8. cxd5 Nxd5 *",
+      "fen": "rnbq1rk1/p1p1bpp1/1p2p2p/3n4/3P3B/2N1PN2/PP3PPP/R2QKB1R w KQ - 0 9",
+      "proofMoves": [
+        "d2d4",
+        "d7d5",
+        "c2c4",
+        "e7e6",
+        "b1c3",
+        "g8f6",
+        "c1g5",
+        "f8e7",
+        "e2e3",
+        "e8g8",
+        "g1f3",
+        "h7h6",
+        "g5h4",
+        "b7b6",
+        "c4d5",
+        "f6d5"
+      ],
+      "answers": [],
+      "family": "transfer",
+      "condition": "transfer",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": null,
+      "distractingCapture": null,
+      "relation": "到期后在不同局面重新核对全部合法应对；不归因于某种心理特征"
+    },
+    {
+      "id": "transfer-en-passant",
+      "version": 1,
+      "pgn": "1. e4 a6 2. e5 d5 *",
+      "fen": "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3",
+      "proofMoves": [
+        "e2e4",
+        "a7a6",
+        "e4e5",
+        "d7d5"
+      ],
+      "answers": [],
+      "family": "transfer",
+      "condition": "transfer",
+      "captureOpportunity": false,
+      "defenseChanged": false,
+      "critical": null,
+      "distractingCapture": null,
+      "relation": "到期后在不同局面重新核对全部合法应对；不归因于某种心理特征"
+    }
+  ]
+}

@@ -16,12 +16,15 @@ struct TimeCapsuleView: View {
     @EnvironmentObject private var game: GameController
     @EnvironmentObject private var notebook: Notebook
     @EnvironmentObject private var decisions: DecisionStore
+    @EnvironmentObject private var conditionStudy: ConditionStudyStore
+    @EnvironmentObject private var personal: PersonalStore
     @State private var document: CapsuleDocument?
     @State private var exporting = false
     @State private var preparing = false
     @State private var message: String?
     @State private var error: String?
     @State private var jobID = UUID()
+    @State private var confirmStudyEnd = false
     private static let queue = DispatchQueue(label:"yiwai.capsule-export",qos:.userInitiated)
     var body: some View {
         Form {
@@ -34,12 +37,16 @@ struct TimeCapsuleView: View {
                 Text("全部棋谱、起始局面、主线 PGN、个人备注与已保存的复盘分析。")
                 Text("新导入 PGN 的原始文本，包括注释和变例；错题本记录、备注及对应内置题目。")
                 Text("棋谱执棋方确认、规则扫描与重复证据；决策回炉的原局面、用户理由及来源、标签修订、题目版本、提示与首次作答、到期时间及本主题复习进度。")
+                Text("个人棋谱实验的原文、棋规事实、引擎证据、合法分支、首答、事后回忆及匹配练习/延后复测。")
+                Text("条件对照的版本化题目、合法 PGN 证明、引擎记录、题序与种子、首答、排除理由、反馈后重试及补记。完整导出含答案，进行中的对照需先结束。")
                 if game.records.contains(where:{$0.source == "pgn" && $0.originalPGN == nil}) {
                     Text("部分棋谱由旧版导入，只有已保存的主线；旧版未保留的注释或变例无法恢复。").foregroundStyle(.secondary)
                 }
             }
             Section {
-                Button(action:prepare) {
+                Button {
+                    if !decisions.demonstration && (conditionStudy.activeRun != nil || personal.data.cases.contains(where:{$0.active != nil})) { confirmStudyEnd = true } else { prepare() }
+                } label: {
                     Label(preparing ? "正在准备…" : "导出本地时间胶囊",systemImage:"square.and.arrow.down")
                         .frame(minHeight:44)
                 }.disabled(preparing).accessibilityIdentifier("exportCapsule")
@@ -57,6 +64,16 @@ struct TimeCapsuleView: View {
             }
             document = nil
         }
+        .alert("完整导出会暴露对照答案",isPresented:$confirmStudyEnd) {
+            Button("继续保留未完成练习",role:.cancel) {}
+            Button("结束对照并导出") {
+                Task {
+                    await conditionStudy.prepare()
+                    do { if let active=conditionStudy.activeRun { try conditionStudy.finish(active.id,expose:decisions.recordExposure) };for item in personal.data.cases where item.active != nil {try personal.finish(item.id,expose:decisions.recordExposure)};prepare() }
+                    catch { self.error=error.localizedDescription }
+                }
+            }
+        } message: { Text("未提交保持缺失。结束后，这组相关题不再计入首次独立比较；可取消返回练习。") }
         .onDisappear { jobID = UUID() }
     }
     private func prepare() {
@@ -64,11 +81,13 @@ struct TimeCapsuleView: View {
         do {
             let games = try game.capsuleRecords(), entries = try notebook.capsuleEntries()
             let decisionData = try decisions.exportArchive()
+            let conditionData = decisions.demonstration ? nil : try conditionStudy.exportArchive()
+            let personalData = decisions.demonstration ? nil : try personal.exportArchive()
             let version = (Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "unknown")
                 + " (" + (Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "unknown") + ") local capsule prototype"
             let id = UUID(); jobID = id; preparing = true
             Self.queue.async {
-                let result = Result { try TimeCapsule.build(games:games,notebook:entries,appVersion:version,decisions:decisionData).encoded() }
+                let result = Result { try TimeCapsule.build(games:games,notebook:entries,appVersion:version,decisions:decisionData,conditionStudy:conditionData,personalEvidence:personalData).encoded() }
                 DispatchQueue.main.async {
                     guard jobID == id else { return }
                     preparing = false

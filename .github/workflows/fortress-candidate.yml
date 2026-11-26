@@ -1,51 +1,84 @@
 name: Fortress candidate (unsigned native checks)
 on:
   push:
-    branches: [p0/fortress-core-review-20261126]
+    branches: [p0/fortress-core-review-20261126, codex/yiwai-fortress-release-20261126]
     paths:
       - 'YiwaiPractice/**'
       - '.github/workflows/fortress-candidate.yml'
+      - 'scripts/**'
+      - 'release-manifest.json'
+      - 'PRIVACY.md'
+      - 'NOTICE.md'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: yiwai-fortress-candidate
+  group: yiwai-fortress-candidate-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   native:
-    if: github.ref == 'refs/heads/p0/fortress-core-review-20261126'
+    if: github.ref == 'refs/heads/p0/fortress-core-review-20261126' || github.ref == 'refs/heads/codex/yiwai-fortress-release-20261126'
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout exact public candidate without credentials
+        id: checkout
         shell: bash
         run: |
           set -euo pipefail
           git clone --no-checkout "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" source
           cd source
           git checkout --detach "$GITHUB_SHA"
-          git rev-parse HEAD
-      - name: Select available iPhone simulator and run native tests
+          mkdir -p ci-evidence
+          git rev-parse HEAD | tee ci-evidence/source-commit.txt
+          xcodebuild -version | tee ci-evidence/xcode-version.txt
+      - name: Verify source manifest and JavaScript regressions
         working-directory: source
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild -version
-          xcrun simctl list devices available --json > /tmp/yiwai-devices.json
+          python3 scripts/verify-source.py 2>&1 | tee ci-evidence/source-verification.log
+          node --test YiwaiPractice/scripts/*-tests.cjs 2>&1 | tee ci-evidence/javascript-tests.log
+      - name: Select available iPhone simulator and run native tests
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > ci-evidence/devices.json
           DEVICE=$(python3 - <<'PY'
           import json
-          d=json.load(open('/tmp/yiwai-devices.json'))['devices']
+          d=json.load(open('ci-evidence/devices.json'))['devices']
           options=[(runtime,x['name'],x['udid']) for runtime,devices in d.items() if 'iOS-' in runtime for x in devices if x.get('isAvailable') and x['name'].startswith('iPhone')]
           assert options, 'No available iPhone simulator'
           options.sort()
           print(options[-1][2])
           PY
           )
-          echo "Simulator: $DEVICE"
-          xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
-      - name: Release simulator build (not signed or uploaded)
+          echo "Simulator: $DEVICE" | tee ci-evidence/test-device.txt
+          set +e
+          xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO -resultBundlePath ci-evidence/DebugTests.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee ci-evidence/debug-tests.log
+          TEST_EXIT=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$TEST_EXIT" > ci-evidence/debug-tests-exit.txt
+          exit "$TEST_EXIT"
+      - name: Release iOS device build (not signed or uploaded)
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         working-directory: source
         shell: bash
         run: |
           set -euo pipefail
-          xcodebuild build -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Release -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+          set +e
+          xcodebuild build -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Release -destination 'generic/platform=iOS' -resultBundlePath ci-evidence/ReleaseBuild.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee ci-evidence/release-build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$BUILD_EXIT" > ci-evidence/release-build-exit.txt
+          exit "$BUILD_EXIT"
+      - name: Preserve native results and raw logs even when a check fails
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: yiwai-native-${{ github.sha }}-${{ github.run_attempt }}
+          path: source/ci-evidence/
+          if-no-files-found: error
+          retention-days: 30
