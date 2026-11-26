@@ -7,6 +7,9 @@ name: Export diagnostic (2 cases; not a release gate)
       - 'YiwaiPractice/UITests/TimeCapsuleUITests.swift'
       - 'release-manifest.json'
       - '.github/workflows/export-diagnostic.yml'
+      - 'scripts/collect-ci-exports.py'
+      - 'scripts/verify-export-pair.py'
+      - 'YiwaiPractice/Resources/fortress-course-v1.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -84,53 +87,22 @@ jobs:
           assert summary.get('expectedFailures',0) == 0, summary
           print('DIAGNOSTIC: both export cases passed; full release gates remain separate.')
           PY
-      - name: Collect actual synthetic export files from this simulator only
+      - name: Collect actual synthetic exports from this simulator only
         if: ${{ always() && steps.simulator.outcome == 'success' }}
+        timeout-minutes: 2
         working-directory: source
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import hashlib,json,os,shutil
-          from pathlib import Path
-          assert os.environ.get('GITHUB_ACTIONS') == 'true', 'CI-only collector; do not scan a personal Mac'
-          evidence=Path('export-diagnostic-evidence')
-          selected=json.loads((evidence/'selected-device.json').read_text())
-          device=selected['udid']
-          data=Path(selected['dataPath']).resolve()
-          assert data.is_absolute() and data.name == 'data' and data.parent.name == device, 'Unexpected selected-device dataPath'
-          groups=data/'Containers'/'Shared'/'AppGroup'
-          report={'device':device,'scope':'Selected simulator data/Containers/Shared/AppGroup only; synthetic UI-test exports','available':groups.is_dir(),'files':[],'rejected':[]}
-          destination=evidence/'actual-exports'
-          destination.mkdir(exist_ok=True)
-          if groups.is_dir():
-              boundary=groups.resolve()
-              assert boundary.is_relative_to(data), 'AppGroup path escapes selected simulator'
-              patterns=('Yiwai-Time-Capsule*.json','-Conditions-UITest-*.json','-UITest-*.json')
-              report['filenamePatterns']=list(patterns)
-              for path in sorted({item for pattern in patterns for item in groups.rglob(pattern)}):
-                  if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(boundary):
-                      continue
-                  relative=str(path.relative_to(groups))
-                  if path.stat().st_size > 10*1024*1024:
-                      report['rejected'].append({'relativePath':relative,'reason':'larger than diagnostic limit'})
-                      continue
-                  raw=path.read_bytes()
-                  try:
-                      capsule=json.loads(raw)
-                      assert capsule.get('format') == 'yiwai-local-time-capsule' and capsule.get('schemaVersion') == 6
-                  except (ValueError,AssertionError,AttributeError):
-                      report['rejected'].append({'relativePath':relative,'reason':'not a schema 6 Yiwai capsule'})
-                      continue
-                  digest=hashlib.sha256(raw).hexdigest()
-                  copied=digest[:12]+'-'+path.name
-                  shutil.copyfile(path,destination/copied)
-                  course=capsule.get('fortressLessons') or {}
-                  questions=sum(len(chapter.get('questions',[])) for chapter in course.get('chapters',[]))
-                  report['files'].append({'relativePath':relative,'artifactFile':copied,'bytes':len(raw),'sha256':digest,'schemaVersion':capsule['schemaVersion'],'courseQuestions':questions,'games':len(capsule.get('games',[]))})
-          (evidence/'actual-exports.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
-          print(json.dumps({'actualExportFiles':len(report['files']),'scopeAvailable':report['available'],'rejected':len(report['rejected'])}))
-          PY
+          python3 scripts/collect-ci-exports.py --selected-device export-diagnostic-evidence/selected-device.json --evidence-dir export-diagnostic-evidence 2>&1 | tee export-diagnostic-evidence/export-collection.log
+      - name: Require both complete real export fixtures
+        if: ${{ always() && steps.simulator.outcome == 'success' }}
+        timeout-minutes: 2
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-export-pair.py --evidence-dir export-diagnostic-evidence --collector-report actual-exports.json --course YiwaiPractice/Resources/fortress-course-v1.json --output export-diagnostic-evidence/actual-exports-verification.json 2>&1 | tee export-diagnostic-evidence/export-verification.log
       - name: Preserve diagnostic logs, results and actual exports even on failure
         if: ${{ always() && steps.checkout.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

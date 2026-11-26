@@ -58,6 +58,27 @@ jobs:
           python3 scripts/verify-source.py 2>&1 | tee ci-evidence/source-verification.log
           node --test YiwaiPractice/scripts/*-tests.cjs 2>&1 | tee ci-evidence/javascript-tests.log
           node YiwaiPractice/scripts/verify-fortress-course.cjs ci-evidence/fortress-course-validation.json
+      - name: Select and record this job's simulator
+        id: simulator
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > ci-evidence/devices.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('ci-evidence')
+          devices=json.loads((root/'devices.json').read_text())['devices']
+          options=[(runtime,x['name'],x['udid'],x) for runtime,items in devices.items() if 'iOS-' in runtime for x in items if x.get('isAvailable') and x['name'].startswith('iPhone')]
+          assert options, 'No available iPhone simulator'
+          selected=sorted(options,key=lambda x:x[:3])[-1]
+          info=dict(selected[3],runtime=selected[0])
+          assert info.get('dataPath'), 'simctl did not report the selected simulator dataPath'
+          (root/'selected-device.json').write_text(json.dumps(info,indent=2))
+          (root/'test-device.txt').write_text(info['udid']+'\n')
+          print('Selected '+info['name']+' '+info['udid'])
+          PY
       - name: Run complete target serially
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         timeout-minutes: ${{ matrix.test_minutes }}
@@ -65,17 +86,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xcrun simctl list devices available --json > ci-evidence/devices.json
-          DEVICE=$(python3 - <<'PY'
-          import json
-          d=json.load(open('ci-evidence/devices.json'))['devices']
-          options=[(runtime,x['name'],x['udid']) for runtime,devices in d.items() if 'iOS-' in runtime for x in devices if x.get('isAvailable') and x['name'].startswith('iPhone')]
-          assert options, 'No available iPhone simulator'
-          options.sort()
-          print(options[-1][2])
-          PY
-          )
-          echo "Simulator: $DEVICE" | tee ci-evidence/test-device.txt
+          DEVICE=$(cat ci-evidence/test-device.txt)
           printf '%s\n' "$TEST_TARGET" > ci-evidence/test-target.txt
           set +e
           xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO "-only-testing:$TEST_TARGET" -resultBundlePath ci-evidence/DebugTests.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee ci-evidence/debug-tests.log
@@ -97,6 +108,22 @@ jobs:
           assert summary.get('expectedFailures', 0) == 0, summary
           print(f"Complete {os.environ['TEST_TARGET']}: {expected} passed, no failures/skips")
           PY
+      - name: Collect actual synthetic exports from this simulator only
+        if: ${{ always() && steps.simulator.outcome == 'success' && matrix.suite == 'ui' }}
+        timeout-minutes: 2
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/collect-ci-exports.py --selected-device ci-evidence/selected-device.json --evidence-dir ci-evidence 2>&1 | tee ci-evidence/export-collection.log
+      - name: Require both complete real export fixtures
+        if: ${{ always() && steps.simulator.outcome == 'success' && matrix.suite == 'ui' }}
+        timeout-minutes: 2
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-export-pair.py --evidence-dir ci-evidence --collector-report actual-exports.json --course YiwaiPractice/Resources/fortress-course-v1.json --output ci-evidence/actual-exports-verification.json 2>&1 | tee ci-evidence/export-verification.log
       - name: Preserve this target's results and raw logs even on failure
         if: ${{ always() && steps.checkout.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

@@ -40,18 +40,34 @@ final class ConditionStudyUITests:XCTestCase {
         }
         return true
     }
-    private func prepareExportFilename(_ app: XCUIApplication) -> Bool {
-        let filename = app.textFields["DOCPicker.filenameTextField"]
-        // A local root and enabled Save can precede the actual document field.
-        guard waitForExportState(app, "filename-ready", condition: {
-            guard filename.exists, let value = filename.value as? String else { return false }
-            return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }) else { return false }
-        let unique = "-Conditions-UITest-" + UUID().uuidString
-        filename.tap(); filename.typeText(unique)
-        return waitForExportState(app, "filename-verified", timeout: 10, condition: {
-            filename.exists && (filename.value as? String)?.contains(unique) == true
-        })
+    private func prepareUniqueExportDirectory(_ app: XCUIApplication) -> Bool {
+        let folderName = "Yiwai-Conditions-UITest-" + UUID().uuidString
+        let rootPrefix = "DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage, Title: "
+        let more = app.buttons["OverflowBarButtonItem"]
+        XCTAssertTrue(more.waitForExistence(timeout: 10)); more.tap()
+        captureState(app, "folder-save-01-menu")
+        let newFolder = app.buttons.matching(NSPredicate(format:"label IN %@", ["新建文件夹", "New Folder"])).firstMatch
+        XCTAssertTrue(newFolder.waitForExistence(timeout: 10)); XCTAssertTrue(newFolder.isEnabled); newFolder.tap()
+        captureState(app, "folder-save-02-before-name")
+        let naming = app.textViews["DOC.inlineRenameField"]
+        XCTAssertTrue(naming.waitForExistence(timeout: 10))
+        naming.typeText(folderName)
+        XCTAssertEqual(naming.value as? String, folderName)
+        captureState(app, "folder-save-03-named")
+        let done = app.buttons["Done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5)); done.tap()
+        captureState(app, "folder-save-04-after-done")
+        // Observed on local iOS 26.1: Done commits the name and enters the new directory.
+        let exactRoot = rootPrefix + folderName
+        let selected = app.otherElements.matching(NSPredicate(format: "identifier == %@", exactRoot)).firstMatch
+        guard waitForExportState(app, "uuid-directory-selected", timeout: 20, condition: { selected.exists && selected.identifier == exactRoot }) else { return false }
+        XCTAssertEqual(selected.identifier, exactRoot)
+        captureState(app, "folder-save-05-selected-directory")
+        return true
+    }
+    private func captureState(_ app: XCUIApplication, _ name: String) {
+        let tree = XCTAttachment(string:app.debugDescription); tree.name=name+"-hierarchy"; tree.lifetime = .keepAlways; add(tree)
+        let screen = XCTAttachment(screenshot:XCUIScreen.main.screenshot()); screen.name=name; screen.lifetime = .keepAlways; add(screen)
     }
     private func verifyExportCompleted(_ app: XCUIApplication) -> Bool {
         let picker = app.navigationBars["FullDocumentManagerViewControllerNavigationBar"]
@@ -157,7 +173,7 @@ final class ConditionStudyUITests:XCTestCase {
         app.alerts.buttons["结束对照并导出"].firstMatch.tap()
         guard selectLocalExportDestination(app) else { return }
         XCTAssertFalse(app.staticTexts["capsuleError"].exists);shot("conditions-09-explicit-complete-export")
-        guard prepareExportFilename(app) else { return }
+        guard prepareUniqueExportDirectory(app) else { return }
         XCTAssertTrue(app.otherElements.matching(NSPredicate(format:"identifier BEGINSWITH %@","DOC.browsingRoot Source: com.apple.FileProvider.LocalStorage,")).firstMatch.exists,app.debugDescription)
         let save=app.navigationBars.buttons.matching(NSPredicate(format:"label IN %@",["保存","Save"])).firstMatch
         XCTAssertTrue(save.waitForExistence(timeout:5))
