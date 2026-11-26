@@ -121,7 +121,7 @@ struct PracticeView: View {
                         FortressLabView()
                     } label: {
                         HStack(alignment: .center, spacing: 12) {
-                            Image(systemName: "shield.checkerboard").font(.title2).foregroundStyle(Palette.sage)
+                            Image(systemName: "shield.lefthalf.filled").font(.title2).foregroundStyle(Palette.sage)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("不败空间").font(.headline).foregroundStyle(Palette.ink)
                                 Text("预测 · 攻防 · 反例").font(.caption).foregroundStyle(.secondary)
