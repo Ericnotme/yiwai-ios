@@ -1,0 +1,51 @@
+name: Fortress candidate (unsigned native checks)
+on:
+  push:
+    branches: [p0/fortress-core-review-20261126]
+    paths:
+      - 'YiwaiPractice/**'
+      - '.github/workflows/fortress-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: yiwai-fortress-candidate
+  cancel-in-progress: true
+jobs:
+  native:
+    if: github.ref == 'refs/heads/p0/fortress-core-review-20261126'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact public candidate without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" source
+          cd source
+          git checkout --detach "$GITHUB_SHA"
+          git rev-parse HEAD
+      - name: Select available iPhone simulator and run native tests
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun simctl list devices available --json > /tmp/yiwai-devices.json
+          DEVICE=$(python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/yiwai-devices.json'))['devices']
+          options=[(runtime,x['name'],x['udid']) for runtime,devices in d.items() if 'iOS-' in runtime for x in devices if x.get('isAvailable') and x['name'].startswith('iPhone')]
+          assert options, 'No available iPhone simulator'
+          options.sort()
+          print(options[-1][2])
+          PY
+          )
+          echo "Simulator: $DEVICE"
+          xcodebuild test -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+      - name: Release simulator build (not signed or uploaded)
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild build -project YiwaiPractice/YiwaiPractice.xcodeproj -scheme YiwaiPractice -configuration Release -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
