@@ -78,7 +78,7 @@
     "Tests/StockfishTests.swift": "fb4ee57de9c769dd1bd15b1a9e1c937aba2434795d13c5e52e1bdbecd8b0e2d0",
     "Tests/TimeCapsuleTests.swift": "9ea233c951fe6197a1c5d3caad5dbbe3628f984324eece1511a2e692074a562e",
     "Tests/YiwaiTests.swift": "11cf2325136b95b350cdb3910dec50b2fc139438407cfda8038c54afa5ae39a7",
-    "UITests/ConditionStudyUITests.swift": "7170d6ae293bf4c093c23a81213cf0caed7a610c03a1dd3a5f83bf675184db3e",
+    "UITests/ConditionStudyUITests.swift": "da884873a3da84aa4a4c15d42be5c5af5c5054c48424ff994f6d714c103505cc",
     "UITests/DecisionReforgeUITests.swift": "8b96c5d20aa896fc6ce2a3666a7b68becc75857389b9b61e2582357d2bfadb2a",
     "UITests/FortressLabUITests.swift": "0a10cf7b5318a999d92578bb93e5378722759e739116481c8062eb58d55bd7f9",
     "UITests/GameUITests.swift": "823562ece5de8b0d9e6c1abbf7e2e6c666915dc155490916dff8ecc8b5e6d1a9",
@@ -106,7 +106,7 @@
     "upstreamUrl": "https://tests.stockfishchess.org/api/nn/nn-61e7af4bb97d.nnue"
   },
   "baseCommit": "aed8347b4dec1b379f6ba93807e175a10c4ed249",
-  "releaseStatus": "Local candidate only. No signing, upload or submission. Build 15 distinguishes the expanded board-scroll fix from locally tested build 14. Latest observed Apple upload remains 0.4.3 (13); release requires the remaining gates in docs/fortress-release-gates.md.",
+  "releaseStatus": "Local candidate only. No App Store distribution archive, upload or submission; development signing is for local acceptance only. Build 15 distinguishes the expanded board-scroll fix from locally tested build 14. Latest observed Apple upload remains 0.4.3 (13); release requires the remaining gates in docs/fortress-release-gates.md.",
   "fortressSourceCommit": "8b832417b2eb2da68b1f61bb98ccb75424f6324e",
   "bundledResourceHashes": {
     "PrivacyPolicy.txt": "b60e0cb7d3007063e3a3755266ead12cecd0e88c87b9d6e00246375edc6549fe",

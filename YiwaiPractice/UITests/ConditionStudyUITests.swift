@@ -5,13 +5,15 @@ final class ConditionStudyUITests:XCTestCase {
     private func reveal(_ app:XCUIApplication,_ element:XCUIElement) {
         for direction in [true,false] {
             for _ in 0..<9 {
-                if element.exists && element.isHittable && (["pauseConditionStudy","endConditionStudy","收起键盘"].contains(element.identifier) || element.label=="收起键盘" || (element.frame.midY > 110 && element.frame.midY < app.frame.maxY-115)) { return }
-                // Keep the gesture above the fixed footer, but below the chess
-                // board when space permits so its move gesture does not win.
                 let footer=app.buttons["pauseConditionStudy"]
+                let visibleBottom=footer.exists ? footer.frame.minY-8 : app.frame.maxY-115
+                if element.exists && element.isHittable && (["pauseConditionStudy","endConditionStudy","收起键盘"].contains(element.identifier) || element.label=="收起键盘" || (element.frame.minY > 110 && element.frame.maxY < visibleBottom)) { return }
+                // Keep content controls above the actual fixed footer, which
+                // becomes taller at accessibility text sizes. Use the content
+                // rather than the transparent outer margin for scrolling.
                 let lower=footer.exists ? min(0.80,(footer.frame.minY-app.frame.minY-40)/app.frame.height) : 0.80
-                app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:direction ? lower:0.20))
-                    .press(forDuration:0.05,thenDragTo:app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:direction ? 0.20:lower)))
+                app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:0.50,dy:direction ? lower:0.20))
+                    .press(forDuration:0.05,thenDragTo:app.windows.firstMatch.coordinate(withNormalizedOffset:CGVector(dx:0.50,dy:direction ? 0.20:lower)))
             }
         }
         XCTAssertTrue(element.isHittable,app.debugDescription)
@@ -111,7 +113,14 @@ final class ConditionStudyUITests:XCTestCase {
         let app=launch(large:true);open(app);tap(app,"startConditionDemo")
         XCTAssertTrue(app.staticTexts["conditionProgress"].waitForExistence(timeout:10),app.debugDescription);XCTAssertTrue(app.staticTexts["conditionProgress"].label.contains("演示"));checkHidden(app)
         reveal(app,app.buttons["conditionNoMate"]);XCTAssertGreaterThanOrEqual(app.buttons["conditionNoMate"].frame.height,44)
+        XCTAssertLessThan(app.buttons["conditionNoMate"].frame.maxY,app.buttons["pauseConditionStudy"].frame.minY)
+        tap(app,"conditionNoMate")
+        XCTAssertTrue(app.staticTexts["conditionPending"].label.contains("待提交：没有一步将死"))
         shot("conditions-07-largest-text")
+        reveal(app,app.buttons["submitConditionAnswer"])
+        XCTAssertLessThan(app.buttons["submitConditionAnswer"].frame.maxY,app.buttons["pauseConditionStudy"].frame.minY)
+        tap(app,"submitConditionAnswer")
+        XCTAssertTrue(app.staticTexts["conditionProgress"].label.contains("2 / 12"))
         if app.frame.width>600 { XCUIDevice.shared.orientation = .landscapeLeft;reveal(app,app.buttons["conditionNoMate"]);shot("conditions-08-ipad-landscape");XCUIDevice.shared.orientation = .portrait }
         tap(app,"endConditionStudy");app.alerts.buttons["结束并查看"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["统一反馈"].waitForExistence(timeout:10),app.debugDescription)

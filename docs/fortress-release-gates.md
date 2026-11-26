@@ -27,6 +27,15 @@ A native proof-driven lesson reachable from the default Learning (学习) screen
 - 0.4.4 (14): initial integrated candidate. Unsigned arm64 Release succeeded; the new iPad Air 11-inch (M3) / iOS 26.1 simulator passed Fortress four promotions/undo/restart, the PGN learning loop and local export, across the original Fortress run and a two-test rerun after adapting the test selectors to iPad tabs. Screenshots and first-run selector failures are retained. These are build 14 observations, not build 15 results. Earlier 88/88 unit tests and 55/55 JavaScript tests also passed before the final metadata/gesture follow-up.
 - 0.4.4 (15): distinguish the follow-up from the build 14 already being tried. A maximum-text-size regression exposed a further tap-only-board case: merely checking `enabled` was insufficient because the board still registered a default no-op drag. Drag is now optional and its gesture is enabled only when a real drag handler exists. The stored-data models and bundle remain unchanged. Final unit/UI/build validation is recorded separately; do not relabel build 14 evidence as build 15.
 
+## Build 15 local validation
+
+- 88/88 native unit tests passed, zero failures/skips, on the isolated iPhone 16e / iOS 26.1 simulator. The completed xcresult identifies build 15's source after the final optional-drag / `.subviews` fix. Persistence, corrupt-file protection, legacy decoding, Stockfish and Fortress tests are included.
+- Unsigned arm64 iOS Release build succeeded. The built Info.plist reports `chat.weijiaxian.yiwai.practice`, version `0.4.4`, build `15`.
+- iPad Air 11-inch (M3) / iOS 26.1 simulator: the targeted maximum-text-size and landscape condition-study UI test passed, with actual screenshots. This is a simulator, not Apple's physical review device. The formal rejection listed the M3 model; the latest beta rejection listed M4.
+- 55/55 JavaScript regressions were rerun and passed on the build 15 source; the final test-only assertion follow-up does not change those JavaScript files.
+- Development-signed Debug iPhoneOS build 15 succeeded using the same existing certificate and provisioning profile as build 14; strict signature validation passed and the application inputs did not change during signing. No profile was added, no account/signing identity was changed, and this preparation did not install or upload the app. It is a local acceptance package, not an App Store distribution archive.
+- Full build 15 iPhone UI regression and exact-commit remote CI have separate results; a preceding run, a stopped run or a successful unsigned build is not substituted for them.
+
 ## Live account observations — 2026-11-26
 
 The authenticated App Store Connect account identifies the existing app as App ID `6821928220`, bundle `chat.weijiaxian.yiwai.practice`. Formal App Review and external TestFlight beta review are separate:
