@@ -285,7 +285,7 @@ struct BoardView: View {
                                     Rectangle().fill(Palette.boardSquare(file:file,rank:rank))
                                     if moved { Rectangle().fill(Color.yellow.opacity(0.35)) }
                                     if highlight.contains(square) { Rectangle().strokeBorder(Palette.coral.opacity(0.75),lineWidth:2) }
-                                    if file == 0 { Text("\(rank)").font(.system(size:9,weight:.semibold)).foregroundStyle(Palette.ink.opacity(0.6)).padding(2) }
+                                    if file == 0 { Text("\(rank)").font(.system(size:11,weight:.semibold)).foregroundStyle(Palette.ink).padding(2) }
                                     if let piece {
                                         Text(piece.symbol).font(.system(size:cell * 0.80)).foregroundStyle(piece.color == "w" ? Color.white : Palette.ink)
                                             .shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:1)
@@ -298,7 +298,7 @@ struct BoardView: View {
                     }
                 }.clipShape(RoundedRectangle(cornerRadius:8))
             }.aspectRatio(1,contentMode:.fit)
-            HStack(spacing:0) { ForEach(Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.system(size:10,weight:.medium)).foregroundStyle(.secondary).frame(maxWidth:.infinity) } }.accessibilityHidden(true)
+            HStack(spacing:0) { ForEach(Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2.weight(.semibold)).foregroundStyle(Palette.ink).frame(maxWidth:.infinity) } }.accessibilityHidden(true)
         }.accessibilityIdentifier("chessBoard")
     }
 }

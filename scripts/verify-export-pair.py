@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify explicitly selected synthetic build-17 exports; never scan a Mac.
+"""Verify explicitly selected synthetic build-18 exports; never scan a Mac.
 
 Input is either repeated --file paths relative to --evidence-dir, or the exact
 files listed by one CI actual-exports.json via --collector-report. The collector
@@ -68,7 +68,7 @@ def verify_default_name(relative_path):
     require(not relative.is_absolute() and ".." not in relative.parts,
             "Original export path must be relative and cannot contain '..'")
     match = EXPORT_NAME.fullmatch(relative.name)
-    require(match is not None, "Original filename is not the build-17 UTC/UUID default: " + relative.name)
+    require(match is not None, "Original filename is not the build-18 UTC/UUID default: " + relative.name)
     timestamp, identifier = match.groups()
     datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H%M%SZ")
     parsed = uuid.UUID(identifier)
@@ -81,7 +81,7 @@ def verify_capsule(data, course):
     require(isinstance(data, dict), "Capsule must be a JSON object")
     require(data.get("format") == "yiwai-local-time-capsule", "Wrong capsule format")
     require(data.get("schemaVersion") == 6, "Expected schema 6")
-    require(data.get("appVersion") == "0.4.4 (17)", "Expected exact appVersion 0.4.4 (17)")
+    require(data.get("appVersion") == "0.4.4 (18)", "Expected exact appVersion 0.4.4 (18)")
     require(finite_number(data.get("exportedAt")) and data["exportedAt"] > 0,
             "Missing valid export timestamp")
     require(data.get("fortressLessons") == course,
@@ -151,7 +151,7 @@ def main():
     inputs.add_argument("--file", action="append", help="Explicit file relative to evidence directory; repeat")
     inputs.add_argument("--collector-report", help="CI collector JSON relative to evidence directory")
     parser.add_argument("--require-default-filenames", action="store_true",
-                        help="Require two distinct actual build-17 UTC/UUID default names (collector relativePath, never artifactFile)")
+                        help="Require two distinct actual build-18 UTC/UUID default names (collector relativePath, never artifactFile)")
     parser.add_argument("--course", type=Path,
                         default=Path(__file__).with_name("expected-fortress-course-v1.json"))
     parser.add_argument("--output", type=Path, help="New receipt path; existing files are not overwritten")

@@ -29,7 +29,7 @@ struct GameBoard: View {
                                         if let piece { Text(piece.symbol).font(.system(size:size*0.79)).foregroundStyle(piece.color == "w" ? Color.white : Palette.ink).shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:1).shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:-1) }
                                         if selected == square { Rectangle().strokeBorder(Palette.coral,lineWidth:3) }
                                         if piece?.type == "k" && piece?.color == frame.turn && frame.check { Rectangle().strokeBorder(.red,lineWidth:2) }
-                                        if column == 0 { VStack { HStack { Text(String(rank)).font(.system(size:9,weight:.bold)); Spacer() }; Spacer() }.padding(2).foregroundStyle(Palette.ink) }
+                                        if column == 0 { VStack { HStack { Text(String(rank)).font(.system(size:11,weight:.semibold)); Spacer() }; Spacer() }.padding(2).foregroundStyle(Palette.ink) }
                                     }.frame(width:size,height:size)
                                 }.buttonStyle(.plain).disabled(!enabled).accessibilityLabel("\(square)，\(piece?.name ?? "空格")\(targets.contains(square) ? "，可以走到" : "")").accessibilityIdentifier("square-\(square)")
                             }
@@ -46,7 +46,7 @@ struct GameBoard: View {
                         if let from = square(value.startLocation), let to = square(value.location), from != to { drag?(from,to) }
                     }, including: enabled && drag != nil ? .all : .subviews)
             }.aspectRatio(1,contentMode:.fit)
-            HStack(spacing:0) { ForEach(flipped ? Array("hgfedcba") : Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2).frame(maxWidth:.infinity) } }.foregroundStyle(.secondary).accessibilityHidden(true)
+            HStack(spacing:0) { ForEach(flipped ? Array("hgfedcba") : Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2.weight(.semibold)).frame(maxWidth:.infinity) } }.foregroundStyle(Palette.ink).accessibilityHidden(true)
         }
     }
 }
