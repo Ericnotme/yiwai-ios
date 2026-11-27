@@ -10,48 +10,86 @@ struct LearningHomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment:.leading,spacing:22) {
-                    Text("把一处失误，\n变成下次的检查").font(.largeTitle.weight(.semibold)).accessibilityIdentifier("learningHomeTitle")
-                    Text("弈外 · Second Look Chess").font(.subheadline).foregroundStyle(Palette.sage)
-                    Text("自己的棋局 → 可核验的证据 → 自己的理由 → 少量练习 → 到期换个局面再试。")
-                    NavigationLink {
-                        FortressLabView()
-                    } label: {
-                        HStack(alignment: .center, spacing: 12) {
-                            Image(systemName: "shield.lefthalf.filled").font(.title2).foregroundStyle(Palette.sage)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("不败空间").font(.headline).foregroundStyle(Palette.ink)
-                                Text("四章课程 · 预测与攻防").font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
-                        }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 18))
-                    }.accessibilityIdentifier("fortressEntry")
-                    NavigationLink { PersonalStudyHome() } label: {
-                        VStack(alignment:.leading,spacing:8) {Text("体验一局 / 导入我的 PGN").font(.headline);Text("本地引擎证据 → 合法分支复答 → 匹配练习 → 到期未见题。仅支持一步将杀，原因是假说，可纠正。").font(.subheadline)}
-                    }.padding(18).background(.white,in:RoundedRectangle(cornerRadius:18)).accessibilityIdentifier("openPersonalStudy")
-                    VStack(alignment:.leading,spacing:12) {
-                        Text("先体验一次完整过程").font(.title3.weight(.semibold))
-                        Text("无需账号或私人棋谱。用明确标注的构造示例走完流程，示例成绩不计个人进度。")
-                        Button("用示例走完一次") {
-                            do { demo = try LearningDemoModel(exposureStore:decisions); error = nil }
-                            catch { self.error = error.localizedDescription }
-                        }.buttonStyle(.borderedProminent).frame(minHeight:44).accessibilityIdentifier("startLearningDemo")
-                    }.padding(18).background(.white,in:RoundedRectangle(cornerRadius:18))
+                VStack(alignment:.leading,spacing:28) {
                     VStack(alignment:.leading,spacing:14) {
-                        Text("从自己的棋局开始").font(.title3.weight(.semibold))
-                        Button("导入我的 PGN / FEN") { importing = true }.buttonStyle(.bordered).frame(minHeight:44).accessibilityIdentifier("homeImport")
-                        NavigationLink("检查棋谱中的同类机会") { LearningPatternView() }.frame(minHeight:44).accessibilityIdentifier("homePatterns")
-                        NavigationLink("回看理由与到期复习") { DecisionListView() }.frame(minHeight:44).accessibilityIdentifier("homeReviews")
-                        Text("\(game.records.count) 盘本机棋谱 · \(decisions.data.items.count) 处个人复习项").font(.caption).accessibilityIdentifier("homeCounts")
-                        NavigationLink("时间胶囊 · 完整本地导出") { TimeCapsuleView() }.frame(minHeight:44).accessibilityIdentifier("homeTimeCapsule")
+                        HStack {
+                            YiwaiEyebrow(text:"弈外 · SECOND LOOK")
+                            Spacer()
+                            Image(systemName:"leaf").foregroundStyle(Palette.sage).accessibilityHidden(true)
+                        }
+                        Text("留一点时间，\n把一步棋看清。")
+                            .font(.system(.largeTitle,design:.serif).weight(.regular))
+                            .lineSpacing(5).fixedSize(horizontal:false,vertical:true)
+                            .accessibilityIdentifier("learningHomeTitle")
+                        Text("从一个小问题开始。先想一想，再看看棋盘上的证据。")
+                            .font(.body).foregroundStyle(Palette.muted).lineSpacing(4)
+                    }.padding(.top,12)
+                    NavigationLink { FortressLabView() } label: {
+                        VStack(alignment:.leading,spacing:14) {
+                            YiwaiEyebrow(text:"从这里开始")
+                            Text("不败空间").font(.system(.title,design:.serif).weight(.medium)).foregroundStyle(Palette.ink)
+                            Text("四章，16 道小题。\n换个条件，再看一步。")
+                                .font(.body).foregroundStyle(Palette.muted).lineSpacing(4)
+                            HStack {
+                                Text("进入课程").font(.body.weight(.medium))
+                                Spacer()
+                                Image(systemName:"arrow.right")
+                            }.foregroundStyle(Palette.coral).padding(.top,6)
+                        }.multilineTextAlignment(.leading).frame(maxWidth:.infinity,alignment:.leading).yiwaiSurface().contentShape(Rectangle())
+                    }.buttonStyle(.plain).accessibilityIdentifier("fortressEntry")
+                    VStack(alignment:.leading,spacing:16) {
+                        Text("从自己的棋局里，找一个为什么")
+                            .font(.system(.title3,design:.serif).weight(.medium))
+                        VStack(spacing:18) {
+                            NavigationLink { PersonalStudyHome() } label: {
+                                YiwaiLinkRow(title:"回看我的一步棋",detail:"导入 PGN，留下自己的判断。",symbol:"text.book.closed")
+                            }.accessibilityIdentifier("openPersonalStudy")
+                            Divider().overlay(Palette.rule)
+                            Button {
+                                do { demo = try LearningDemoModel(exposureStore:decisions); error = nil }
+                                catch { self.error = error.localizedDescription }
+                            } label: {
+                                YiwaiLinkRow(title:"先用示例走一遍",detail:"无需准备棋谱，示例不计个人进度。",symbol:"play.circle")
+                            }.accessibilityIdentifier("startLearningDemo")
+                        }.buttonStyle(.plain).yiwaiSurface()
                     }
-                    NavigationLink { ConditionStudyHome() } label: { VStack(alignment:.leading,spacing:8) { Text("改变条件、发现盲区 · 实验").font(.headline); Text("自愿对照 12 个局面，统一反馈后再等 24 小时换题复测。").font(.subheadline) } }.padding(18).background(.white,in:RoundedRectangle(cornerRadius:18)).accessibilityIdentifier("openConditionStudy")
-                    Text("棋谱学习当前只支持「漏走一步将死」；5 道经棋规核验的白方新局面，属于同一个主题。证据不足或题库用尽会明确说明。练习表现不等于棋力或 Elo 提升。").font(.caption).foregroundStyle(.secondary)
+                    VStack(alignment:.leading,spacing:16) {
+                        HStack(alignment:.firstTextBaseline) {
+                            Text("留在这里的思路").font(.system(.title3,design:.serif).weight(.medium))
+                            Spacer()
+                            Text("\(game.records.count) 盘棋谱").font(.caption).foregroundStyle(Palette.muted)
+                        }
+                        VStack(spacing:18) {
+                            NavigationLink { DecisionListView() } label: {
+                                YiwaiLinkRow(title:"理由与复习",detail:"回到当时的想法，到期再试一题。",symbol:"arrow.counterclockwise")
+                            }.accessibilityIdentifier("homeReviews")
+                            Divider().overlay(Palette.rule)
+                            NavigationLink { LearningPatternView() } label: {
+                                YiwaiLinkRow(title:"寻找相似的机会",detail:"看看自己的棋谱里，哪些细节再次出现。",symbol:"magnifyingglass")
+                            }.accessibilityIdentifier("homePatterns")
+                            Divider().overlay(Palette.rule)
+                            NavigationLink { TimeCapsuleView() } label: {
+                                YiwaiLinkRow(title:"时间胶囊",detail:"把棋局、备注和练习记录一起带走。",symbol:"archivebox")
+                            }.accessibilityIdentifier("homeTimeCapsule")
+                        }.buttonStyle(.plain).yiwaiSurface()
+                        Text("\(game.records.count) 盘本机棋谱 · \(decisions.data.items.count) 处个人复习项")
+                            .font(.caption).foregroundStyle(Palette.muted).accessibilityIdentifier("homeCounts")
+                    }
+                    Button { importing = true } label: {
+                        Label("导入棋谱或局面 · PGN / FEN",systemImage:"square.and.arrow.down")
+                    }.buttonStyle(YiwaiActionStyle(primary:false)).accessibilityIdentifier("homeImport")
+                    NavigationLink { ConditionStudyHome() } label: {
+                        YiwaiLinkRow(title:"换个条件，试试判断",detail:"可自愿参加的 12 局面对照练习。",symbol:"square.on.square")
+                    }.buttonStyle(.plain).accessibilityIdentifier("openConditionStudy")
+                    DisclosureGroup("关于这段学习旅程") {
+                        Text("棋谱学习目前聚焦「漏走一步将死」，有 5 道经棋规核验的白方新局面。证据不足或题库用尽时会说明。练习记录帮助你回看思路，不是棋力或 Elo 评分。示例与个人记录分开保存。")
+                            .font(.subheadline).foregroundStyle(Palette.muted).lineSpacing(4).padding(.top,8)
+                    }.font(.subheadline).tint(Palette.sage)
                     if let error { Text(error).foregroundStyle(.red) }
-                    Button("关于弈外、隐私与开源许可") { about = true }.frame(minHeight:44).accessibilityIdentifier("learningAbout")
-                }.padding(20).frame(maxWidth:640).frame(maxWidth:.infinity)
-            }.background(Palette.paper).navigationTitle("学习").navigationBarTitleDisplayMode(.inline)
+                    Button("关于弈外、隐私与开源许可") { about = true }
+                        .font(.caption).foregroundStyle(Palette.muted).frame(minHeight:44).accessibilityIdentifier("learningAbout")
+                }.padding(.horizontal,24).padding(.bottom,28).frame(maxWidth:640).frame(maxWidth:.infinity)
+            }.background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("学习").navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented:$importing) { PositionImportView() }
             .sheet(isPresented:$about) { AboutView() }
             .fullScreenCover(item:$demo) { model in LearningDemoView(model:model) }

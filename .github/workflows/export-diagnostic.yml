@@ -35,7 +35,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD | tee export-diagnostic-evidence/source-commit.txt
           xcodebuild -version | tee export-diagnostic-evidence/xcode-version.txt
-          printf '%s\n' 'DIAGNOSTIC ONLY: two export UI cases; does not replace full 94-unit/34-UI/Release gates.' > export-diagnostic-evidence/scope.txt
+          printf '%s\n' 'DIAGNOSTIC ONLY: two export UI cases; does not replace full 96-unit/34-UI/Release gates.' > export-diagnostic-evidence/scope.txt
       - name: Verify exact source manifest
         working-directory: source
         shell: bash
@@ -102,7 +102,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/verify-export-pair.py --evidence-dir export-diagnostic-evidence --collector-report actual-exports.json --course YiwaiPractice/Resources/fortress-course-v1.json --output export-diagnostic-evidence/actual-exports-verification.json 2>&1 | tee export-diagnostic-evidence/export-verification.log
+          python3 scripts/verify-export-pair.py --require-default-filenames --evidence-dir export-diagnostic-evidence --collector-report actual-exports.json --course YiwaiPractice/Resources/fortress-course-v1.json --output export-diagnostic-evidence/actual-exports-verification.json 2>&1 | tee export-diagnostic-evidence/export-verification.log
       - name: Preserve diagnostic logs, results and actual exports even on failure
         if: ${{ always() && steps.checkout.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

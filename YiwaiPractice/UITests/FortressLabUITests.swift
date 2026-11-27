@@ -49,21 +49,25 @@ final class FortressLabUITests: XCTestCase {
         let app=XCUIApplication()
         app.launchArguments=["-ui-testing","-reset-test-data","-simulate-no-network"]
         app.launch()
-        func tap(_ element:XCUIElement) {
+        func tap(_ element:XCUIElement, inTrailingSpace:Bool = false) {
             XCTAssertTrue(element.waitForExistence(timeout:10))
             for _ in 0..<7 {
                 if element.isHittable && element.frame.midY > 110 && element.frame.midY < app.frame.maxY-90 { break }
                 app.swipeUp()
             }
-            XCTAssertTrue(element.isHittable); element.tap()
+            XCTAssertTrue(element.isHittable)
+            if inTrailingSpace {
+                // The complete row must respond, including space beside its text.
+                element.coordinate(withNormalizedOffset:CGVector(dx:0.85,dy:0.5)).tap()
+            } else { element.tap() }
         }
         tap(app.buttons["fortressEntry"])
         XCTAssertTrue(app.staticTexts["fortressCourseProgress"].waitForExistence(timeout:10))
         XCTAssertEqual(app.staticTexts["fortressCourseProgress"].label,"已作答 0 / 16 题")
-        tap(app.buttons["fortressChapter-geometry"])
-        tap(app.buttons["fortressQuestion-geometry-wrong-color"])
+        tap(app.buttons["fortressChapter-geometry"],inTrailingSpace:true)
+        tap(app.buttons["fortressQuestion-geometry-wrong-color"],inTrailingSpace:true)
         tap(app.buttons["fortressNo"])
-        XCTAssertTrue(app.staticTexts["fortressQuizFeedback"].label.contains("需要重新检查条件"))
+        XCTAssertTrue(app.staticTexts["fortressQuizFeedback"].label.contains("再看一处细节"))
         XCTAssertTrue(app.staticTexts["fortressSavedAnswer"].label.contains("首答：不合法"))
         app.swipeDown()
         tap(app.buttons["走之后"])
@@ -73,8 +77,8 @@ final class FortressLabUITests: XCTestCase {
         tap(app.buttons["fortressEntry"])
         XCTAssertTrue(app.staticTexts["fortressCourseProgress"].waitForExistence(timeout:10))
         XCTAssertEqual(app.staticTexts["fortressCourseProgress"].label,"已作答 1 / 16 题")
-        tap(app.buttons["fortressChapter-geometry"])
-        tap(app.buttons["fortressQuestion-geometry-wrong-color"])
+        tap(app.buttons["fortressChapter-geometry"],inTrailingSpace:true)
+        tap(app.buttons["fortressQuestion-geometry-wrong-color"],inTrailingSpace:true)
         tap(app.buttons["fortressRedo"])
         tap(app.buttons["fortressYes"])
         XCTAssertTrue(app.staticTexts["fortressSavedAnswer"].label.contains("首答：不合法；最近：合法；已作答 2 次"))

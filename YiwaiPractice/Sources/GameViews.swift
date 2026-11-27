@@ -23,7 +23,7 @@ struct GameBoard: View {
                                 let piece = frame.pieces.first { $0.square == square }
                                 Button { tap(square) } label: {
                                     ZStack {
-                                        Rectangle().fill((file+rank)%2 == 0 ? Color(red:0.75,green:0.82,blue:0.76) : Color(red:0.96,green:0.94,blue:0.88))
+                                        Rectangle().fill(Palette.boardSquare(file:file,rank:rank))
                                         if [frame.from,frame.to].contains(square) { Rectangle().fill(Color.yellow.opacity(0.30)) }
                                         if targets.contains(square) { Circle().fill(Palette.sage.opacity(0.5)).frame(width:size*0.25,height:size*0.25) }
                                         if let piece { Text(piece.symbol).font(.system(size:size*0.79)).foregroundStyle(piece.color == "w" ? Color.white : Palette.ink).shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:1).shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:-1) }
@@ -167,7 +167,7 @@ struct GameHistoryView: View {
                         }
                     }
                 }
-            }.scrollContentBackground(.hidden).background(Palette.paper).navigationTitle("棋谱")
+            }.listStyle(.insetGrouped).scrollContentBackground(.hidden).background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("棋谱")
             .toolbar { Button("导入 FEN / PGN") { importing = true }.accessibilityIdentifier("importPosition") }
             .sheet(isPresented:$importing) { PositionImportView() }
         }

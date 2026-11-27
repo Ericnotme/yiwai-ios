@@ -2,6 +2,19 @@ import XCTest
 @testable import YiwaiPractice
 
 final class TimeCapsuleTests: XCTestCase {
+    func testExportNamesRemainDistinctWithinOneSecondAndUseUTC() throws {
+        let firstID = try XCTUnwrap(UUID(uuidString:"00000000-0000-0000-0000-000000000001"))
+        let secondID = try XCTUnwrap(UUID(uuidString:"00000000-0000-0000-0000-000000000002"))
+        let instant = Date(timeIntervalSince1970:0)
+        let first = CapsuleExportName.make(date:instant,id:firstID)
+        let second = CapsuleExportName.make(date:instant,id:secondID)
+        XCTAssertEqual(first,"Yiwai-Time-Capsule-1970-01-01T000000Z-00000000-0000-0000-0000-000000000001")
+        XCTAssertNotEqual(first,second)
+        XCTAssertEqual(first,CapsuleExportName.make(date:instant,id:firstID))
+        XCTAssertEqual((first as NSString).lastPathComponent,first)
+        XCTAssertFalse(first.contains(":"))
+        XCTAssertFalse(first.hasSuffix(".json"),"FileExporter supplies the JSON type extension")
+    }
     private let pgn = "[Event \"Local test\"]\r\n[White \"Example A\"]\r\n[Black \"Example B\"]\r\n\r\n1. e4 {先看对手的威胁 ♞} (1. d4 d5) e5 2. Nf3 Nc6 *\r\n"
 
     @MainActor func testRawPGNNoteAndFENSurviveRelaunchAndExport() throws {

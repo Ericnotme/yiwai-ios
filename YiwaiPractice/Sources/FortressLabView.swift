@@ -8,45 +8,66 @@ struct FortressLabView: View {
     @EnvironmentObject private var progress: FortressProgressStore
     @State private var catalog: FortressCourseCatalog?
     @State private var error: String?
-
+    private let invitations = ["象走哪种格，王又能走到哪里。", "多一枚棋子，这一步还成立吗？", "升变之后，别忘了看看谁在保护。", "换个角落，重新检查刚才的判断。"]
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("不败空间").font(.largeTitle.bold())
-                Text("四章条件课：先判断一步，再沿棋规看证据。").font(.headline)
-                Text("课程比较当前这一步是否合法，不把单步结果当成整局证明。攻防挑战另用三个已验证的受限经典残局。")
-                    .foregroundStyle(.secondary)
-                NavigationLink { FortressChallengeView() } label: {
-                    Label("直接进入攻防挑战", systemImage: "shield.lefthalf.filled").font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                }.buttonStyle(.borderedProminent).accessibilityIdentifier("fortressChallengeEntry")
+            VStack(alignment:.leading,spacing:26) {
+                VStack(alignment:.leading,spacing:12) {
+                    YiwaiEyebrow(text:"四章小课 · 十六道判断题")
+                    Text("换个角度，\n再看这一步。")
+                        .font(.system(.largeTitle,design:.serif).weight(.regular)).lineSpacing(4)
+                        .fixedSize(horizontal:false,vertical:true)
+                    Text("先看看一步棋成立的条件，\n再到残局里，亲手试试。")
+                        .font(.body).foregroundStyle(Palette.muted).lineSpacing(4)
+                }.padding(.top,12)
                 if let message = progress.errorMessage {
                     Text(message).foregroundStyle(.red).accessibilityIdentifier("fortressProgressError")
                 }
                 if let error { Text(error).foregroundStyle(.red).accessibilityIdentifier("fortressError") }
                 if let catalog {
-                    Text(progress.errorMessage == nil ? "已作答 \(progress.answeredCount(catalog.questions, version: catalog.version)) / \(catalog.questions.count) 题" : "进度暂不可读取，旧文件已保留")
-                        .font(.headline).accessibilityIdentifier("fortressCourseProgress")
-                    Text("首答和最近一次作答保存在本机。重做会标记为已见题；已作答不等于已掌握，也不是棋力评分。")
-                        .font(.caption).foregroundStyle(.secondary)
-                    ForEach(Array(catalog.chapters.enumerated()), id: \.element.id) { index, chapter in
-                        NavigationLink {
-                            FortressChapterView(chapter: chapter, version: catalog.version)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 9) {
-                                Text("第 \(index + 1) 章 · \(chapter.questions.count) 题").font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
-                                Text(chapter.title).font(.title3.bold()).foregroundStyle(Palette.ink)
-                                Text(chapter.summary).font(.subheadline).foregroundStyle(Palette.ink.opacity(0.75))
-                                Text("已作答 \(progress.answeredCount(chapter.questions, version: catalog.version)) / \(chapter.questions.count)")
-                                    .font(.caption.weight(.semibold)).foregroundStyle(Palette.sage)
-                            }.multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading).padding(18)
-                                .background(.white, in: RoundedRectangle(cornerRadius: 18))
-                        }.accessibilityIdentifier("fortressChapter-\(chapter.id)")
+                    let answered = progress.answeredCount(catalog.questions,version:catalog.version)
+                    VStack(alignment:.leading,spacing:10) {
+                        Text(progress.errorMessage == nil ? "已作答 \(answered) / \(catalog.questions.count) 题" : "进度暂不可读取，旧文件已保留")
+                            .font(.subheadline.weight(.medium)).accessibilityIdentifier("fortressCourseProgress")
+                        if progress.errorMessage == nil {
+                            ProgressView(value:Double(answered),total:Double(catalog.questions.count))
+                                .tint(Palette.sage).accessibilityHidden(true)
+                            Text(answered == 0 ? "从第一章开始，或挑一章感兴趣的。" : "不用赶进度，上次留下的判断还在这里。")
+                                .font(.caption).foregroundStyle(Palette.muted)
+                        }
                     }
-                } else if error == nil { ProgressView("正在核验本地课程…") }
+                    VStack(spacing:0) {
+                        ForEach(Array(catalog.chapters.enumerated()),id:\.element.id) { index, chapter in
+                            if index > 0 { Divider().overlay(Palette.rule) }
+                            NavigationLink { FortressChapterView(chapter:chapter,version:catalog.version) } label: {
+                                HStack(alignment:.top,spacing:16) {
+                                    Text(String(format:"%02d",index+1))
+                                        .font(.system(.title2,design:.serif)).foregroundStyle(Palette.coral)
+                                        .frame(minWidth:32,alignment:.leading).accessibilityHidden(true)
+                                    VStack(alignment:.leading,spacing:8) {
+                                        Text(chapter.title).font(.headline.weight(.medium)).foregroundStyle(Palette.ink)
+                                        Text(invitations[index % invitations.count]).font(.subheadline).foregroundStyle(Palette.muted)
+                                        Text("已作答 \(progress.answeredCount(chapter.questions,version:catalog.version)) / \(chapter.questions.count)")
+                                            .font(.caption).foregroundStyle(Palette.sage)
+                                    }.fixedSize(horizontal:false,vertical:true)
+                                    Spacer(minLength:0)
+                                    Image(systemName:"chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Palette.muted).padding(.top,5)
+                                }.multilineTextAlignment(.leading).frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,20).contentShape(Rectangle())
+                            }.buttonStyle(.plain).accessibilityIdentifier("fortressChapter-\(chapter.id)")
+                        }
+                    }.padding(.horizontal,20).background(Palette.surface,in:RoundedRectangle(cornerRadius:20))
+                        .overlay(RoundedRectangle(cornerRadius:20).strokeBorder(Palette.rule.opacity(0.65),lineWidth:0.7))
+                } else if error == nil { ProgressView("正在打开课程…") }
+                NavigationLink { FortressChallengeView() } label: {
+                    YiwaiLinkRow(title:"把想法走出来",detail:"三个经典残局，随时可以开始攻防。",symbol:"shield.lefthalf.filled")
+                }.buttonStyle(.plain).yiwaiSurface().accessibilityIdentifier("fortressChallengeEntry")
+                DisclosureGroup("关于课程与作答记录") {
+                    Text("这 16 题比较当前一步是否合法，不把单步结果当成整局证明。第一次与最近一次判断都保存在本机，重做不会覆盖首答。作答进度不是掌握程度，也不是棋力评分。")
+                        .font(.subheadline).foregroundStyle(Palette.muted).lineSpacing(4).padding(.top,8)
+                }.font(.subheadline).tint(Palette.sage)
                 FortressBoundaryView()
-            }.padding(18).frame(maxWidth: 640).frame(maxWidth: .infinity)
-        }.background(Palette.paper).navigationTitle("不败空间").navigationBarTitleDisplayMode(.inline)
+            }.padding(.horizontal,24).padding(.bottom,28).frame(maxWidth:640).frame(maxWidth:.infinity)
+        }.background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("不败空间").navigationBarTitleDisplayMode(.inline)
         .task {
             guard catalog == nil, error == nil else { return }
             do { let loaded = try FortressCourseCatalog.load(); try loaded.validate(using: ChessEngine()); catalog = loaded }
@@ -61,28 +82,36 @@ private struct FortressChapterView: View {
     @EnvironmentObject private var progress: FortressProgressStore
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text(chapter.title).font(.largeTitle.bold())
-                Text(chapter.summary).foregroundStyle(.secondary)
-                Text("已作答 \(progress.answeredCount(chapter.questions, version: version)) / \(chapter.questions.count) 题")
-                    .font(.headline).accessibilityIdentifier("fortressChapterProgress")
-                ForEach(Array(chapter.questions.enumerated()), id: \.element.id) { index, question in
-                    NavigationLink {
-                        FortressCourseQuestionView(question: question, version: version)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("\(index + 1). \(question.title)").font(.headline).foregroundStyle(Palette.ink)
-                            Text(question.prompt).font(.subheadline).foregroundStyle(Palette.ink.opacity(0.75))
-                            Text(progress.entry(for: question, version: version) == nil ? "尚未作答" : "已作答 · 可回看或重做")
-                                .font(.caption).foregroundStyle(Palette.sage)
-                        }.multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading).padding(18)
-                            .background(.white, in: RoundedRectangle(cornerRadius: 18))
-                    }.accessibilityIdentifier("fortressQuestion-\(question.id)")
-                }
-                NavigationLink("进入三局攻防挑战") { FortressChallengeView() }
-                    .frame(minHeight: 44).accessibilityIdentifier("fortressChapterChallenge")
-            }.padding(18).frame(maxWidth: 640).frame(maxWidth: .infinity)
-        }.background(Palette.paper).navigationTitle("条件课程").navigationBarTitleDisplayMode(.inline)
+            VStack(alignment:.leading,spacing:24) {
+                VStack(alignment:.leading,spacing:12) {
+                    YiwaiEyebrow(text:"一次看清一个细节")
+                    Text(chapter.title).font(.system(.largeTitle,design:.serif).weight(.regular))
+                    Text(chapter.summary).font(.body).foregroundStyle(Palette.muted).lineSpacing(4)
+                    Text("已作答 \(progress.answeredCount(chapter.questions,version:version)) / \(chapter.questions.count) 题")
+                        .font(.caption.weight(.medium)).foregroundStyle(Palette.sage).accessibilityIdentifier("fortressChapterProgress")
+                }.padding(.top,12)
+                VStack(spacing:0) {
+                    ForEach(Array(chapter.questions.enumerated()),id:\.element.id) { index, question in
+                        if index > 0 { Divider().overlay(Palette.rule) }
+                        NavigationLink { FortressCourseQuestionView(question:question,version:version) } label: {
+                            HStack(alignment:.top,spacing:14) {
+                                Text(String(format:"%02d",index+1)).font(.system(.title3,design:.serif)).foregroundStyle(Palette.coral).accessibilityHidden(true)
+                                VStack(alignment:.leading,spacing:8) {
+                                    Text(question.title).font(.body.weight(.medium)).foregroundStyle(Palette.ink)
+                                    Text(progress.entry(for:question,version:version) == nil ? "想一想，再看证据" : "已作答 · 回看或再试一次")
+                                        .font(.caption).foregroundStyle(Palette.muted)
+                                }.fixedSize(horizontal:false,vertical:true)
+                                Spacer(minLength:0)
+                                Image(systemName:"chevron.right").font(.caption2).foregroundStyle(Palette.muted).padding(.top,5)
+                            }.multilineTextAlignment(.leading).frame(maxWidth:.infinity,minHeight:54,alignment:.leading).padding(.vertical,18).contentShape(Rectangle())
+                        }.buttonStyle(.plain).accessibilityIdentifier("fortressQuestion-\(question.id)")
+                    }
+                }.padding(.horizontal,20).background(Palette.surface,in:RoundedRectangle(cornerRadius:20))
+                    .overlay(RoundedRectangle(cornerRadius:20).strokeBorder(Palette.rule.opacity(0.65),lineWidth:0.7))
+                NavigationLink("想动手试试？进入攻防挑战") { FortressChallengeView() }
+                    .font(.subheadline).foregroundStyle(Palette.sage).frame(minHeight:44).accessibilityIdentifier("fortressChapterChallenge")
+            }.padding(.horizontal,24).padding(.bottom,28).frame(maxWidth:640).frame(maxWidth:.infinity)
+        }.background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("条件课程").navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -90,59 +119,79 @@ private struct FortressCourseQuestionView: View {
     let question: FortressCourseQuestion
     let version: Int
     @EnvironmentObject private var progress: FortressProgressStore
+    @Environment(\.dynamicTypeSize) private var textSize
     @State private var evaluation: FortressCourseEvaluation?
     @State private var answer: Bool?
     @State private var showAfter = false
     @State private var redoing = false
     @State private var error: String?
     @State private var saveError: String?
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(question.title).font(.title.bold())
-                Text(question.prompt).font(.headline).accessibilityIdentifier("fortressQuestionPrompt")
-                Text("候选着：\(question.candidateLabel)").font(.subheadline).foregroundStyle(Palette.sage)
-                if redoing { Text("重做已见题：首答保留，这次作答不计作首次表现。").font(.caption).foregroundStyle(.secondary) }
+            VStack(alignment:.leading,spacing:22) {
+                VStack(alignment:.leading,spacing:12) {
+                    YiwaiEyebrow(text:answer == nil ? "先留下自己的判断" : "回到棋盘，看清原因")
+                    Text(question.title).font(.system(.title,design:.serif).weight(.medium))
+                    Text(question.prompt).font(.body).lineSpacing(4).accessibilityIdentifier("fortressQuestionPrompt")
+                    Text("候选着：\(question.candidateLabel)")
+                        .font(.subheadline.weight(.medium)).foregroundStyle(Palette.sage)
+                    if redoing { Text("这题已经见过。第一次的判断会保留，也可以再作一次判断。")
+                        .font(.caption).foregroundStyle(Palette.muted) }
+                }.padding(.top,12)
                 if let error { Text(error).foregroundStyle(.red).accessibilityIdentifier("fortressError") }
                 if let evaluation {
-                    if answer != nil {
-                        Picker("棋规证据步骤", selection: $showAfter) {
-                            Text("走之前").tag(false)
-                            Text(evaluation.candidateIsLegal ? "走之后" : "合法对照").tag(true)
-                        }.pickerStyle(.segmented).accessibilityIdentifier("fortressEvidenceStep")
-                    }
-                    BoardView(frame: showAfter && answer != nil ? evaluation.after : evaluation.before, highlight: question.highlight)
-                        .accessibilityIdentifier("fortressCourseBoard")
-                    if answer == nil {
-                        Button("合法") { submit(true, evaluation: evaluation) }
-                            .buttonStyle(.borderedProminent).frame(minHeight: 44).accessibilityIdentifier("fortressYes")
-                        Button("不合法") { submit(false, evaluation: evaluation) }
-                            .buttonStyle(.bordered).frame(minHeight: 44).accessibilityIdentifier("fortressNo")
-                    } else {
-                        Text(answer == evaluation.candidateIsLegal ? "判断正确 · 这一步\(evaluation.candidateIsLegal ? "合法" : "不合法")" : "需要重新检查条件 · 这一步\(evaluation.candidateIsLegal ? "合法" : "不合法")")
-                            .font(.headline).accessibilityIdentifier("fortressQuizFeedback")
-                        Text(question.explanation).accessibilityIdentifier("fortressExplanation")
-                        Text(evaluation.candidateIsLegal
-                             ? "走后局面执行的是候选着 \(evaluation.evidenceMove.code)（\(evaluation.evidenceMove.san)）。"
-                             : "候选着不合法，不生成非法的走后局面。此处另外演示一条合法着 \(evaluation.evidenceMove.code)（\(evaluation.evidenceMove.san)），只作棋规对照，不是最佳着推荐。")
-                            .font(.subheadline).accessibilityIdentifier("fortressEvidenceMove")
-                        Text(showAfter ? "走后：\(evaluation.after.result == "*" ? "棋局仍在继续" : evaluation.after.reason)" : "当前显示走之前的原局面")
-                            .font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("fortressEvidencePosition")
-                        Text("只验证这一步及其局面变化；单步合法、不合法或一次作答，都不等于整局胜负证明、掌握程度或 Elo 提升。")
-                            .font(.caption).foregroundStyle(.secondary)
-                        if let row = progress.entry(for: question, version: version) {
-                            Text("首答：\(row.firstAnswer.choice ? "合法" : "不合法")；最近：\(row.latestAnswer.choice ? "合法" : "不合法")；已作答 \(row.attempts) 次")
-                                .font(.caption).accessibilityIdentifier("fortressSavedAnswer")
+                    VStack(spacing:14) {
+                        if answer != nil {
+                            Picker("棋规证据步骤",selection:$showAfter) {
+                                Text("走之前").tag(false)
+                                Text(evaluation.candidateIsLegal ? "走之后" : "合法对照").tag(true)
+                            }.pickerStyle(.segmented).accessibilityIdentifier("fortressEvidenceStep")
                         }
-                        Button("重新作答（首答保留）") { answer = nil; showAfter = false; redoing = true; saveError = nil }
-                            .buttonStyle(.bordered).frame(minHeight: 44).accessibilityIdentifier("fortressRedo")
+                        BoardView(frame:showAfter && answer != nil ? evaluation.after : evaluation.before,highlight:question.highlight)
+                            .accessibilityIdentifier("fortressCourseBoard")
+                    }.padding(12).background(Palette.surface,in:RoundedRectangle(cornerRadius:20))
+                        .overlay(RoundedRectangle(cornerRadius:20).strokeBorder(Palette.rule.opacity(0.65),lineWidth:0.7))
+                    if answer == nil {
+                        let layout = textSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing:12)) : AnyLayout(HStackLayout(spacing:12))
+                        layout {
+                            Button("合法") { submit(true,evaluation:evaluation) }.accessibilityIdentifier("fortressYes")
+                            Button("不合法") { submit(false,evaluation:evaluation) }.accessibilityIdentifier("fortressNo")
+                        }.buttonStyle(YiwaiActionStyle(primary:false))
+                        Text("不必急着选，先留意棋子之间的位置。")
+                            .font(.caption).foregroundStyle(Palette.muted)
+                    } else {
+                        VStack(alignment:.leading,spacing:16) {
+                            HStack(alignment:.top,spacing:10) {
+                                Image(systemName:answer == evaluation.candidateIsLegal ? "checkmark.circle" : "arrow.turn.up.left")
+                                    .foregroundStyle(answer == evaluation.candidateIsLegal ? Palette.sage : Palette.coral)
+                                Text(answer == evaluation.candidateIsLegal ? "判断正确 · 这一步\(evaluation.candidateIsLegal ? "合法" : "不合法")" : "再看一处细节 · 这一步\(evaluation.candidateIsLegal ? "合法" : "不合法")")
+                                    .font(.headline).accessibilityIdentifier("fortressQuizFeedback")
+                            }
+                            Text(question.explanation).font(.body).lineSpacing(5).accessibilityIdentifier("fortressExplanation")
+                            Divider().overlay(Palette.rule)
+                            YiwaiEyebrow(text:"棋盘上的证据")
+                            Text(evaluation.candidateIsLegal
+                                 ? "走后局面执行的是候选着 \(evaluation.evidenceMove.code)（\(evaluation.evidenceMove.san)）。"
+                                 : "候选着不合法，不生成非法的走后局面。此处另外演示一条合法着 \(evaluation.evidenceMove.code)（\(evaluation.evidenceMove.san)），只作棋规对照，不是最佳着推荐。")
+                                .font(.subheadline).foregroundStyle(Palette.muted).lineSpacing(4).accessibilityIdentifier("fortressEvidenceMove")
+                            Text(showAfter ? "走后：\(evaluation.after.result == "*" ? "棋局仍在继续" : evaluation.after.reason)" : "当前显示走之前的原局面")
+                                .font(.caption).foregroundStyle(Palette.muted).accessibilityIdentifier("fortressEvidencePosition")
+                        }.yiwaiSurface()
+                        if let row = progress.entry(for:question,version:version) {
+                            Text("首答：\(row.firstAnswer.choice ? "合法" : "不合法")；最近：\(row.latestAnswer.choice ? "合法" : "不合法")；已作答 \(row.attempts) 次")
+                                .font(.caption).foregroundStyle(Palette.muted).accessibilityIdentifier("fortressSavedAnswer")
+                        }
+                        Button("再想一次 · 首答会保留") { answer = nil; showAfter = false; redoing = true; saveError = nil }
+                            .buttonStyle(YiwaiActionStyle(primary:false)).accessibilityIdentifier("fortressRedo")
+                        Text("这里验证一步棋及其变化。一次作答不代表整局胜负、掌握程度或棋力提升。")
+                            .font(.caption).foregroundStyle(Palette.muted)
                     }
                 }
                 if let saveError { Text(saveError).foregroundStyle(.red).accessibilityIdentifier("fortressSaveError") }
-                NavigationLink("进入三局攻防挑战") { FortressChallengeView() }.frame(minHeight: 44)
-            }.padding(18).frame(maxWidth: 640).frame(maxWidth: .infinity)
-        }.background(Palette.paper).navigationTitle("一步与条件").navigationBarTitleDisplayMode(.inline)
+                NavigationLink("想动手试试？进入攻防挑战") { FortressChallengeView() }
+                    .font(.subheadline).foregroundStyle(Palette.sage).frame(minHeight:44)
+            }.padding(.horizontal,22).padding(.bottom,28).frame(maxWidth:640).frame(maxWidth:.infinity)
+        }.background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("一步与条件").navigationBarTitleDisplayMode(.inline)
         .task {
             guard evaluation == nil, error == nil else { return }
             do {
@@ -151,7 +200,6 @@ private struct FortressCourseQuestionView: View {
             } catch { self.error = error.localizedDescription }
         }
     }
-
     private func submit(_ value: Bool, evaluation: FortressCourseEvaluation) {
         guard answer == nil else { return }
         answer = value; showAfter = false
@@ -169,8 +217,8 @@ private struct FortressBoundaryView: View {
                 Text("如果白兵升变，黑王可立即吃掉升变子；如果白兵被吃，余下是子力不足。经典错色象边兵残局，不是标准开局和棋的证明。")
                 Text("本机棋规在三次重复或五十回合时自动判和；正式比赛中这两项通常需申诉。200 半回合练习上限不是和棋判定。")
                 Link("公开研究证据", destination: URL(string: "https://github.com/Ericnotme/weijia-open-studio/pull/3")!)
-            }.font(.subheadline).padding(.top, 8)
-        }
+            }.font(.subheadline).foregroundStyle(Palette.muted).lineSpacing(4).padding(.top, 8)
+        }.font(.subheadline).tint(Palette.sage)
     }
 }
 
@@ -180,29 +228,34 @@ private struct FortressChallengeView: View {
     @State private var selected: String?
     @State private var promotion: [ChessMove] = []
     @State private var error: String?
+    @Environment(\.dynamicTypeSize) private var textSize
     private let seedNames = ["临门升变", "从第二横线开始", "中途的边兵"]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("攻防挑战").font(.largeTitle.bold())
-                Text("三个受限经典残局：你执白，尝试攻破按规则防守的堡垒。无需先答完课程。")
-                    .foregroundStyle(.secondary)
+                YiwaiEyebrow(text:"把想法放到棋盘上")
+                Text("轮到你，走走看。").font(.system(.title,design:.serif).weight(.regular))
+                Text("你执白方，从三个经典残局里寻找突破口。黑王会按已核验的防守规则回应。")
+                    .font(.body).foregroundStyle(Palette.muted).lineSpacing(4)
                 if let error { Text(error).foregroundStyle(.red).accessibilityIdentifier("fortressError") }
                 if let session {
-                    Text(seedNames[session.seed]).font(.title2.bold())
+                    Text(seedNames[session.seed]).font(.headline.weight(.medium))
                     let frame = session.current.frame
                     let targets = Set(frame.replies.filter { $0.from == selected }.map(\.to))
                     GameBoard(frame: frame, selected: selected, targets: targets, enabled: session.canMove, tap: tap, drag: choose)
                     Text(status(session)).font(.subheadline).accessibilityIdentifier("fortressStatus")
                     if let reply = session.current.reply { Text("黑方按防守规则走了 \(reply)。").font(.caption).foregroundStyle(.secondary) }
-                    Button("悔棋（撤回一轮）") { undo() }.buttonStyle(.bordered).disabled(session.history.count <= 1).accessibilityIdentifier("fortressUndo")
-                    Button("重来") { start(session.seed) }.buttonStyle(.bordered).accessibilityIdentifier("fortressRestart")
-                    Button("换一个堡垒") { start((session.seed + 1) % FortressPolicy.seeds.count) }.buttonStyle(.bordered).accessibilityIdentifier("fortressChangeSeed")
+                    let actions = textSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing:12)) : AnyLayout(HStackLayout(spacing:12))
+                    actions {
+                        Button("悔棋 · 撤回一轮") { undo() }.disabled(session.history.count <= 1).accessibilityIdentifier("fortressUndo")
+                        Button("重新开始") { start(session.seed) }.accessibilityIdentifier("fortressRestart")
+                    }.buttonStyle(YiwaiActionStyle(primary:false))
+                    Button("换一个堡垒") { start((session.seed + 1) % FortressPolicy.seeds.count) }.buttonStyle(YiwaiActionStyle(primary:false)).accessibilityIdentifier("fortressChangeSeed")
                 }
                 FortressBoundaryView()
             }.padding(18).frame(maxWidth: 640).frame(maxWidth: .infinity)
-        }.background(Palette.paper).navigationTitle("残局攻防").navigationBarTitleDisplayMode(.inline)
+        }.background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("残局攻防").navigationBarTitleDisplayMode(.inline)
         .task {
             guard engine == nil else { return }
             do { engine = try ChessEngine(); start(0) } catch { self.error = error.localizedDescription }

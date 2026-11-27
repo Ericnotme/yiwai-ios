@@ -2,6 +2,15 @@ import XCTest
 @testable import YiwaiPractice
 
 final class YiwaiTests: XCTestCase {
+    func testBoardColorsMatchAlgebraicSquaresAndBishopLesson() {
+        // Standard corners and the actual h2 / a8 wrong-bishop course example.
+        XCTAssertEqual(Palette.boardSquare(file:0,rank:1),Palette.boardDark,"a1 is dark")
+        XCTAssertEqual(Palette.boardSquare(file:7,rank:1),Palette.boardLight,"h1 is light")
+        XCTAssertEqual(Palette.boardSquare(file:0,rank:8),Palette.boardLight,"a8 is light")
+        XCTAssertEqual(Palette.boardSquare(file:7,rank:8),Palette.boardDark,"h8 is dark")
+        XCTAssertEqual(Palette.boardSquare(file:7,rank:2),Palette.boardDark,"h2 is dark")
+        XCTAssertEqual(Palette.boardSquare(file:0,rank:7),Palette.boardDark,"a7 is dark")
+    }
     #if DEBUG
     func testOfflineFailureInjectionRejectsURLLoading() async throws {
         let configuration = URLSessionConfiguration.ephemeral

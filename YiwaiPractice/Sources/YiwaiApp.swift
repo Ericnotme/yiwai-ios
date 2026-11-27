@@ -66,10 +66,69 @@ final class OfflineTestProtocol: URLProtocol {
 }
 #endif
 enum Palette {
-    static let paper = Color(red:0.97,green:0.96,blue:0.94)
-    static let ink = Color(red:0.14,green:0.20,blue:0.20)
-    static let coral = Color(red:0.78,green:0.29,blue:0.21)
-    static let sage = Color(red:0.29,green:0.42,blue:0.37)
+    static let paper = Color(red:0.97,green:0.96,blue:0.93)
+    static let surface = Color(red:0.995,green:0.989,blue:0.973)
+    static let ink = Color(red:0.18,green:0.19,blue:0.17)
+    static let muted = Color(red:0.39,green:0.40,blue:0.36)
+    static let coral = Color(red:0.66,green:0.29,blue:0.21)
+    static let sage = Color(red:0.28,green:0.38,blue:0.31)
+    static let rule = Color(red:0.86,green:0.85,blue:0.80)
+    static let boardLight = Color(red:0.94,green:0.91,blue:0.84)
+    static let boardDark = Color(red:0.70,green:0.76,blue:0.67)
+    // File is zero-based (a = 0); rank uses the board's 1...8 coordinates.
+    static func boardSquare(file: Int, rank: Int) -> Color {
+        (file + rank).isMultiple(of:2) ? boardLight : boardDark
+    }
+}
+
+private struct YiwaiSurface: ViewModifier {
+    func body(content: Content) -> some View {
+        content.padding(20)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius:20))
+            .overlay(RoundedRectangle(cornerRadius:20).strokeBorder(Palette.rule.opacity(0.65),lineWidth:0.7))
+    }
+}
+extension View {
+    func yiwaiSurface() -> some View { modifier(YiwaiSurface()) }
+}
+
+struct YiwaiActionStyle: ButtonStyle {
+    var primary = true
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.font(.body.weight(.medium))
+            .multilineTextAlignment(.center).fixedSize(horizontal:false,vertical:true)
+            .frame(maxWidth:.infinity,minHeight:24).padding(.horizontal,18).padding(.vertical,14)
+            .foregroundStyle(primary ? Palette.surface : Palette.ink)
+            .background(primary ? Palette.ink : Palette.surface,in:RoundedRectangle(cornerRadius:15))
+            .overlay(RoundedRectangle(cornerRadius:15).strokeBorder(primary ? Color.clear : Palette.rule,lineWidth:1))
+            .opacity(enabled ? (configuration.isPressed ? 0.78 : 1) : 0.45)
+    }
+}
+
+struct YiwaiEyebrow: View {
+    let text: String
+    var body: some View {
+        Text(text).font(.caption.weight(.medium)).tracking(1.2).foregroundStyle(Palette.sage)
+    }
+}
+
+struct YiwaiLinkRow: View {
+    let title: String
+    let detail: String
+    let symbol: String
+    var body: some View {
+        HStack(alignment:.center,spacing:14) {
+            Image(systemName:symbol).font(.body).foregroundStyle(Palette.sage).frame(width:24)
+            VStack(alignment:.leading,spacing:5) {
+                Text(title).font(.body.weight(.medium)).foregroundStyle(Palette.ink)
+                Text(detail).font(.subheadline).foregroundStyle(Palette.muted)
+            }.fixedSize(horizontal:false,vertical:true)
+            Spacer(minLength:4)
+            Image(systemName:"chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Palette.muted)
+        }.multilineTextAlignment(.leading).frame(maxWidth:.infinity,minHeight:54,alignment:.leading)
+            .contentShape(Rectangle())
+    }
 }
 struct RootView: View {
     @EnvironmentObject var notebook: Notebook
@@ -122,7 +181,7 @@ struct PracticeView: View {
                 VStack(alignment:.leading,spacing:20) {
                     HStack(alignment:.top) {
                         VStack(alignment:.leading,spacing:6) {
-                            Text("弈外").font(.system(size:32,weight:.semibold,design:.serif))
+                            Text("弈外").font(.system(.largeTitle,design:.serif).weight(.medium))
                             Text("Second Look Chess").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("englishBrand")
                             Text("每天看懂一个为什么").font(.subheadline).foregroundStyle(.secondary)
                         }
@@ -223,7 +282,7 @@ struct BoardView: View {
                                 let piece = frame.pieces.first { $0.square == square }
                                 let moved = square == frame.to || square == frame.from
                                 ZStack(alignment:.topLeading) {
-                                    Rectangle().fill((file + rank) % 2 == 0 ? Color(red:0.82,green:0.86,blue:0.81) : Color(red:0.96,green:0.94,blue:0.88))
+                                    Rectangle().fill(Palette.boardSquare(file:file,rank:rank))
                                     if moved { Rectangle().fill(Color.yellow.opacity(0.35)) }
                                     if highlight.contains(square) { Rectangle().strokeBorder(Palette.coral.opacity(0.75),lineWidth:2) }
                                     if file == 0 { Text("\(rank)").font(.system(size:9,weight:.semibold)).foregroundStyle(Palette.ink.opacity(0.6)).padding(2) }
@@ -284,12 +343,13 @@ struct AboutView: View {
                         Text("弈外").font(.title2.weight(.semibold))
                         Text("Second Look Chess").font(.headline).accessibilityIdentifier("englishBrand")
                         Text("不急着多走一步。\n先把这一步的道理看清。").font(.body).lineSpacing(5)
-                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 原生 iPhone 版").font(.caption).foregroundStyle(.secondary)
+                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 离线练习 · iPhone 与 iPad").font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical,14)
                 }
                 Section("本版能做什么") {
                     Label("离线人机、完整棋谱与 PGN 导出",systemImage:"person.fill")
                     Label("整局复盘与离线 AI Coach",systemImage:"sparkles")
+                    Label("不败空间 · 四章16题与残局攻防",systemImage:"shield.lefthalf.filled")
                     Label("3 组原创练习，9 个局面",systemImage:"checkerboard.rectangle")
                     Label("准确应将验证与逐步回放",systemImage:"play.rectangle")
                     Label("本地错题本与复习笔记",systemImage:"bookmark")

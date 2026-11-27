@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify explicitly selected synthetic build-16 exports; never scan a Mac.
+"""Verify explicitly selected synthetic build-17 exports; never scan a Mac.
 
 Input is either repeated --file paths relative to --evidence-dir, or the exact
 files listed by one CI actual-exports.json via --collector-report. The collector
@@ -11,8 +11,10 @@ import datetime
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 import sys
+import uuid
 
 COURSE_SHA256 = "32d1a4aa8e8f68db758320d932cd6b9b720add88ddc42efbef701ddb495750dc"
 ORIGINAL_PGN = "1. e4 {Local original comment} (1. d4 d5) e5 2. Nf3 Nc6 *"
@@ -20,6 +22,7 @@ NOTE = "Look for the opponent's threat.\nA local memory."
 MOVES = ["e2e4", "e7e5", "g1f3", "b8c6"]
 INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 LIMIT = 10 * 1024 * 1024
+EXPORT_NAME = re.compile(r"Yiwai-Time-Capsule-([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z)-([0-9A-F]{8}(?:-[0-9A-F]{4}){3}-[0-9A-F]{12})\.json")
 
 
 def require(condition, message):
@@ -58,15 +61,31 @@ def finite_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
+def verify_default_name(relative_path):
+    require(isinstance(relative_path, str) and relative_path,
+            "Missing original relative path for default-name verification")
+    relative = Path(relative_path)
+    require(not relative.is_absolute() and ".." not in relative.parts,
+            "Original export path must be relative and cannot contain '..'")
+    match = EXPORT_NAME.fullmatch(relative.name)
+    require(match is not None, "Original filename is not the build-17 UTC/UUID default: " + relative.name)
+    timestamp, identifier = match.groups()
+    datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H%M%SZ")
+    parsed = uuid.UUID(identifier)
+    require(parsed.version == 4 and str(parsed).upper() == identifier,
+            "Default export filename must contain a complete random UUID")
+    return {"filename": relative.name, "timestampUTC": timestamp, "operationID": identifier}
+
+
 def verify_capsule(data, course):
     require(isinstance(data, dict), "Capsule must be a JSON object")
     require(data.get("format") == "yiwai-local-time-capsule", "Wrong capsule format")
     require(data.get("schemaVersion") == 6, "Expected schema 6")
-    require(data.get("appVersion") == "0.4.4 (16)", "Expected exact appVersion 0.4.4 (16)")
+    require(data.get("appVersion") == "0.4.4 (17)", "Expected exact appVersion 0.4.4 (17)")
     require(finite_number(data.get("exportedAt")) and data["exportedAt"] > 0,
             "Missing valid export timestamp")
     require(data.get("fortressLessons") == course,
-            "Course definitions differ from the pinned build-16 four-chapter, 16-question catalog")
+            "Course definitions differ from the pinned four-chapter, 16-question catalog")
     progress = data.get("fortressProgress")
     require(isinstance(progress, dict) and progress.get("schemaVersion") == 1
             and progress.get("records") == [], "Expected the reset fixture's empty fortressProgress")
@@ -131,6 +150,8 @@ def main():
     inputs = parser.add_mutually_exclusive_group(required=True)
     inputs.add_argument("--file", action="append", help="Explicit file relative to evidence directory; repeat")
     inputs.add_argument("--collector-report", help="CI collector JSON relative to evidence directory")
+    parser.add_argument("--require-default-filenames", action="store_true",
+                        help="Require two distinct actual build-17 UTC/UUID default names (collector relativePath, never artifactFile)")
     parser.add_argument("--course", type=Path,
                         default=Path(__file__).with_name("expected-fortress-course-v1.json"))
     parser.add_argument("--output", type=Path, help="New receipt path; existing files are not overwritten")
@@ -140,6 +161,7 @@ def main():
                "evidenceDirectory": str(args.evidence_dir.resolve()),
                "expectedFixtureCounts": {"conditions": 1, "pgn_notes": 1},
                "courseReferenceSHA256": COURSE_SHA256,
+               "defaultFilenamesRequired": args.require_default_filenames,
                "files": [], "counts": {"conditions": 0, "pgn_notes": 0}, "errors": [],
                "limitations": "Content verification does not prove UI completion, exact run/source provenance, full UI suite success, or release readiness."}
     try:
@@ -172,6 +194,7 @@ def main():
         else:
             selections = [(value, None) for value in args.file]
         seen = set()
+        seen_names, seen_ids = set(), set()
         for value, metadata in selections:
             item = {"selectedPath": value}
             try:
@@ -185,6 +208,13 @@ def main():
                     require(metadata.get("sha256") == digest and metadata.get("bytes") == len(raw),
                             "Collector SHA256/byte count does not match the actual file")
                     item["originalRelativePath"] = metadata.get("relativePath")
+                if args.require_default_filenames:
+                    name_check = verify_default_name(metadata.get("relativePath") if metadata is not None else value)
+                    require(name_check["filename"] not in seen_names, "Default filename was reused")
+                    require(name_check["operationID"] not in seen_ids, "Export operation UUID was reused")
+                    seen_names.add(name_check["filename"])
+                    seen_ids.add(name_check["operationID"])
+                    item["defaultFilename"] = name_check
                 data = decode(raw)
                 category, checks = verify_capsule(data, course)
                 receipt["counts"][category] += 1
