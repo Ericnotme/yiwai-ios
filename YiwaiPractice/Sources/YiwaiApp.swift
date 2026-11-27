@@ -4,6 +4,9 @@ import SwiftUI
     @StateObject private var notebook: Notebook
     @StateObject private var game: GameController
     @StateObject private var decisions: DecisionStore
+    @StateObject private var conditionStudy: ConditionStudyStore
+    @StateObject private var personal: PersonalStore
+    @StateObject private var fortressProgress: FortressProgressStore
     init() {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-simulate-no-network") {
@@ -39,9 +42,18 @@ import SwiftUI
         }
         #endif
         _decisions = StateObject(wrappedValue:DecisionStore(file:decisionFile,clock:decisionClock,clockOrigin:clockOrigin))
+        let conditionFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-conditions.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let conditionFile { try? FileManager.default.removeItem(at:conditionFile) }
+        let personalFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-personal.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let personalFile { try? FileManager.default.removeItem(at:personalFile) }
+        _personal = StateObject(wrappedValue:PersonalStore(file:personalFile,clock:decisionClock,clockOrigin:clockOrigin))
+        _conditionStudy = StateObject(wrappedValue:ConditionStudyStore(file:conditionFile,clock:decisionClock,clockOrigin:clockOrigin))
+        let fortressFile = testMode ? gameFile?.deletingLastPathComponent().appendingPathComponent("ui-test-fortress.json") : nil
+        if testMode && ProcessInfo.processInfo.arguments.contains("-reset-test-data"), let fortressFile { try? FileManager.default.removeItem(at:fortressFile) }
+        _fortressProgress = StateObject(wrappedValue:FortressProgressStore(file:fortressFile,clock:decisionClock))
     }
     var body: some Scene {
-        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).tint(Palette.coral).preferredColorScheme(.light) }
+        WindowGroup { RootView().environmentObject(notebook).environmentObject(game).environmentObject(decisions).environmentObject(conditionStudy).environmentObject(personal).environmentObject(fortressProgress).tint(Palette.coral).preferredColorScheme(.light) }
     }
 }
 #if DEBUG
@@ -54,20 +66,80 @@ final class OfflineTestProtocol: URLProtocol {
 }
 #endif
 enum Palette {
-    static let paper = Color(red:0.97,green:0.96,blue:0.94)
-    static let ink = Color(red:0.14,green:0.20,blue:0.20)
-    static let coral = Color(red:0.78,green:0.29,blue:0.21)
-    static let sage = Color(red:0.29,green:0.42,blue:0.37)
+    static let paper = Color(red:0.97,green:0.96,blue:0.93)
+    static let surface = Color(red:0.995,green:0.989,blue:0.973)
+    static let ink = Color(red:0.18,green:0.19,blue:0.17)
+    static let muted = Color(red:0.39,green:0.40,blue:0.36)
+    static let coral = Color(red:0.66,green:0.29,blue:0.21)
+    static let sage = Color(red:0.28,green:0.38,blue:0.31)
+    static let rule = Color(red:0.86,green:0.85,blue:0.80)
+    static let boardLight = Color(red:0.94,green:0.91,blue:0.84)
+    static let boardDark = Color(red:0.70,green:0.76,blue:0.67)
+    // File is zero-based (a = 0); rank uses the board's 1...8 coordinates.
+    static func boardSquare(file: Int, rank: Int) -> Color {
+        (file + rank).isMultiple(of:2) ? boardLight : boardDark
+    }
+}
+
+private struct YiwaiSurface: ViewModifier {
+    func body(content: Content) -> some View {
+        content.padding(20)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius:20))
+            .overlay(RoundedRectangle(cornerRadius:20).strokeBorder(Palette.rule.opacity(0.65),lineWidth:0.7))
+    }
+}
+extension View {
+    func yiwaiSurface() -> some View { modifier(YiwaiSurface()) }
+}
+
+struct YiwaiActionStyle: ButtonStyle {
+    var primary = true
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.font(.body.weight(.medium))
+            .multilineTextAlignment(.center).fixedSize(horizontal:false,vertical:true)
+            .frame(maxWidth:.infinity,minHeight:24).padding(.horizontal,18).padding(.vertical,14)
+            .foregroundStyle(primary ? Palette.surface : Palette.ink)
+            .background(primary ? Palette.ink : Palette.surface,in:RoundedRectangle(cornerRadius:15))
+            .overlay(RoundedRectangle(cornerRadius:15).strokeBorder(primary ? Color.clear : Palette.rule,lineWidth:1))
+            .opacity(enabled ? (configuration.isPressed ? 0.78 : 1) : 0.45)
+    }
+}
+
+struct YiwaiEyebrow: View {
+    let text: String
+    var body: some View {
+        Text(text).font(.caption.weight(.medium)).tracking(1.2).foregroundStyle(Palette.sage)
+    }
+}
+
+struct YiwaiLinkRow: View {
+    let title: String
+    let detail: String
+    let symbol: String
+    var body: some View {
+        HStack(alignment:.center,spacing:14) {
+            Image(systemName:symbol).font(.body).foregroundStyle(Palette.sage).frame(width:24)
+            VStack(alignment:.leading,spacing:5) {
+                Text(title).font(.body.weight(.medium)).foregroundStyle(Palette.ink)
+                Text(detail).font(.subheadline).foregroundStyle(Palette.muted)
+            }.fixedSize(horizontal:false,vertical:true)
+            Spacer(minLength:4)
+            Image(systemName:"chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(Palette.muted)
+        }.multilineTextAlignment(.leading).frame(maxWidth:.infinity,minHeight:54,alignment:.leading)
+            .contentShape(Rectangle())
+    }
 }
 struct RootView: View {
     @EnvironmentObject var notebook: Notebook
     @EnvironmentObject var game: GameController
-    @State private var tab = ProcessInfo.processInfo.arguments.contains("-ui-testing") ? 0 : 3
+    @State private var tab = 5
     @State private var lessonIndex = 0
     @State private var positionIndex = 0
     @State private var session = UUID()
     var body: some View {
         TabView(selection:$tab) {
+            LearningHomeView().tabItem { Label("学习",systemImage:"arrow.triangle.2.circlepath") }.tag(5)
             GamePlayView().tabItem { Label("下棋",systemImage:"checkerboard.rectangle") }.tag(3)
             GameHistoryView { id in tab = 3; game.resume(id) }.tabItem { Label("棋谱",systemImage:"books.vertical") }.tag(4)
             PracticeView(lessonIndex:$lessonIndex,positionIndex:$positionIndex,session:$session).id(session)
@@ -77,7 +149,6 @@ struct RootView: View {
                     if let j = lesson.positions.firstIndex(where:{$0.id == id}) { lessonIndex = i; positionIndex = j; session = UUID(); tab = 0; break }
                 }
             }.tabItem { Label("错题本",systemImage:"bookmark") }.tag(1)
-            AboutView().tabItem { Label("关于",systemImage:"leaf") }.tag(2)
         }
         .alert("棋谱提示",isPresented:Binding(get:{game.errorMessage != nil},set:{if !$0 { game.errorMessage = nil }})) { Button("知道了",role:.cancel) { game.errorMessage = nil } } message: { Text(game.errorMessage ?? "") }
         .alert("本地保存提示",isPresented:Binding(get:{notebook.errorMessage != nil},set:{if !$0 { notebook.errorMessage = nil }})) {
@@ -110,7 +181,7 @@ struct PracticeView: View {
                 VStack(alignment:.leading,spacing:20) {
                     HStack(alignment:.top) {
                         VStack(alignment:.leading,spacing:6) {
-                            Text("弈外").font(.system(size:32,weight:.semibold,design:.serif))
+                            Text("弈外").font(.system(.largeTitle,design:.serif).weight(.medium))
                             Text("Second Look Chess").font(.subheadline).foregroundStyle(.secondary).accessibilityIdentifier("englishBrand")
                             Text("每天看懂一个为什么").font(.subheadline).foregroundStyle(.secondary)
                         }
@@ -211,10 +282,10 @@ struct BoardView: View {
                                 let piece = frame.pieces.first { $0.square == square }
                                 let moved = square == frame.to || square == frame.from
                                 ZStack(alignment:.topLeading) {
-                                    Rectangle().fill((file + rank) % 2 == 0 ? Color(red:0.82,green:0.86,blue:0.81) : Color(red:0.96,green:0.94,blue:0.88))
+                                    Rectangle().fill(Palette.boardSquare(file:file,rank:rank))
                                     if moved { Rectangle().fill(Color.yellow.opacity(0.35)) }
                                     if highlight.contains(square) { Rectangle().strokeBorder(Palette.coral.opacity(0.75),lineWidth:2) }
-                                    if file == 0 { Text("\(rank)").font(.system(size:9,weight:.semibold)).foregroundStyle(Palette.ink.opacity(0.6)).padding(2) }
+                                    if file == 0 { Text("\(rank)").font(.system(size:11,weight:.semibold)).foregroundStyle(Palette.ink).padding(2) }
                                     if let piece {
                                         Text(piece.symbol).font(.system(size:cell * 0.80)).foregroundStyle(piece.color == "w" ? Color.white : Palette.ink)
                                             .shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:1)
@@ -227,7 +298,7 @@ struct BoardView: View {
                     }
                 }.clipShape(RoundedRectangle(cornerRadius:8))
             }.aspectRatio(1,contentMode:.fit)
-            HStack(spacing:0) { ForEach(Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.system(size:10,weight:.medium)).foregroundStyle(.secondary).frame(maxWidth:.infinity) } }.accessibilityHidden(true)
+            HStack(spacing:0) { ForEach(Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2.weight(.semibold)).foregroundStyle(Palette.ink).frame(maxWidth:.infinity) } }.accessibilityHidden(true)
         }.accessibilityIdentifier("chessBoard")
     }
 }
@@ -272,12 +343,13 @@ struct AboutView: View {
                         Text("弈外").font(.title2.weight(.semibold))
                         Text("Second Look Chess").font(.headline).accessibilityIdentifier("englishBrand")
                         Text("不急着多走一步。\n先把这一步的道理看清。").font(.body).lineSpacing(5)
-                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 原生 iPhone 版").font(.caption).foregroundStyle(.secondary)
+                        Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · 离线练习 · iPhone 与 iPad").font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical,14)
                 }
                 Section("本版能做什么") {
                     Label("离线人机、完整棋谱与 PGN 导出",systemImage:"person.fill")
                     Label("整局复盘与离线 AI Coach",systemImage:"sparkles")
+                    Label("不败空间 · 四章16题与残局攻防",systemImage:"shield.lefthalf.filled")
                     Label("3 组原创练习，9 个局面",systemImage:"checkerboard.rectangle")
                     Label("准确应将验证与逐步回放",systemImage:"play.rectangle")
                     Label("本地错题本与复习笔记",systemImage:"bookmark")
@@ -293,7 +365,7 @@ struct AboutView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section("内容与许可") {
-                    Text("局面与讲解改编自弈外 / Knight Room 的原创练习。棋规使用 chess.js 1.4.0；对弈电脑为 Seed 0.2，未评级；复盘使用 Stockfish.js 19 lite。教练依据棋规和引擎讲解，不是大模型。原生页面参考 Lichess 的棋盘与操作布局，保留弈外设计；未复制其代码或图标。")
+                    Text("练习内容包含弈外 / Knight Room 的原创练习。不败空间基于经典错色象车兵残局；原创部分是交互、题目组织与防守规则实现，不主张残局结论为本项目首创，也不声称解决国际象棋初始局面。棋规使用 chess.js 1.4.0；对弈电脑为 Seed 0.2，未评级；复盘使用 Stockfish.js 19 lite。教练依据棋规和引擎讲解，不是大模型。原生页面参考 Lichess 的棋盘与操作布局，保留弈外设计；未复制其代码或图标。")
                     Button("查看 chess.js BSD-2-Clause 许可") { openLicense("chess-LICENSE") }
                     Button("查看 Stockfish GPL-3.0 许可") { openLicense("stockfish19-LICENSE",directory:"Stockfish") }
                     if let url = Bundle.main.url(forResource:"stockfish19-source",withExtension:"tar.gz",subdirectory:"Stockfish") {

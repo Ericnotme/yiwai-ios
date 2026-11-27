@@ -1,16 +1,25 @@
 import XCTest
 final class LearningPatternUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure=false }
+    private func selectHistoryTab(_ app: XCUIApplication) {
+        let phoneTab = app.tabBars.buttons["棋谱"]
+        // iPadOS exposes its top-level tabs as ordinary buttons, not a TabBar.
+        let tab = phoneTab.exists ? phoneTab : app.buttons.matching(NSPredicate(format: "label == %@", "棋谱")).firstMatch
+        XCTAssertTrue(tab.waitForExistence(timeout: 8)); tab.tap()
+    }
     private func reveal(_ app:XCUIApplication,_ target:XCUIElement) {
         for _ in 0..<12 {
             if target.isHittable { return }
-            app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.76)).press(forDuration:0.05,thenDragTo:app.coordinate(withNormalizedOffset:CGVector(dx:0.97,dy:0.25)))
+            // Scroll within the actual content. A drag at 97% of the window can
+            // land outside the inset scroll view and leave the page stationary.
+            let scroll = app.scrollViews.firstMatch
+            if scroll.exists { scroll.swipeUp() } else { app.swipeUp() }
         }
         XCTAssertTrue(target.isHittable,app.debugDescription)
     }
     private func shot(_ app:XCUIApplication,_ name:String) { let a=XCTAttachment(screenshot:app.screenshot());a.name=name;a.lifetime = .keepAlways;add(a) }
     private func importGame(_ app:XCUIApplication,_ pgn:String) {
-        app.tabBars.buttons["棋谱"].tap();app.buttons["importPosition"].tap();app.buttons["PGN 棋谱"].tap()
+        selectHistoryTab(app);app.buttons["importPosition"].tap();app.buttons["PGN 棋谱"].tap()
         let input=app.textViews["importText"];input.tap();input.typeText(pgn)
         if app.buttons["收起键盘"].exists { app.buttons["收起键盘"].tap() }
         reveal(app,app.buttons["confirmImport"]);app.buttons["confirmImport"].tap()
@@ -45,7 +54,7 @@ final class LearningPatternUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["reforgeResult"].label.contains("不计到期独立复测"));shot(app,"loop-02-practice-result")
         app.terminate();app.launchArguments=["-ui-testing","-simulate-no-network"]
         app.launchEnvironment["YIWAI_UI_CLOCK"]="2026-10-25T12:00:00Z";app.launch()
-        app.tabBars.buttons["棋谱"].tap();app.buttons["openDecisionReforge"].tap()
+        selectHistoryTab(app);app.buttons["openDecisionReforge"].tap()
         app.descendants(matching:.any).matching(NSPredicate(format:"identifier BEGINSWITH %@","reforge-item-")).firstMatch.tap()
         XCTAssertEqual(app.staticTexts["savedDecisionOrigin"].label,"棋谱规则证据（非用户理由）")
         reveal(app,app.buttons["startReforge"]);app.buttons["startReforge"].tap()
@@ -86,7 +95,7 @@ final class LearningPatternUITests: XCTestCase {
     }
     func testKeyboardTextEntryAndCorrection() {
         let app=XCUIApplication();app.launchArguments=["-ui-testing","-reset-test-data","-simulate-no-network"];app.launch()
-        app.tabBars.buttons["棋谱"].tap();app.buttons["importPosition"].tap()
+        selectHistoryTab(app);app.buttons["importPosition"].tap()
         let input=app.textViews["importText"];input.tap();input.typeText("1234")
         input.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:4))
         XCTAssertEqual(input.value as? String, "")

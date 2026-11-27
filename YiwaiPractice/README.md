@@ -1,8 +1,18 @@
-# 弈外 · iPhone 原生版
+# 弈外 · iPhone / iPad 原生版
 
-SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.4.0（10）** 的应用源码；构建步骤和许可证见仓库根目录的 `BUILDING.md`、`NOTICE.md`、`LICENSE`。复盘在非持久化 WebKit 中离线运行本地 Stockfish WASM。
+SwiftUI 原生页面 + JavaScriptCore 棋规，最低 iOS 17。本目录为 **0.4.4（18）开发候选** 的应用源码，尚未上传或发行；构建步骤和许可证见仓库根目录的 `BUILDING.md`、`NOTICE.md`、`LICENSE`。复盘在非持久化 WebKit 中离线运行本地 Stockfish WASM。
 
 ## 可以做什么
+
+- 不败空间四章16题、受限经典残局攻防；课程首答与最近作答分别保留。
+- build 18 在 17 的暖色界面上提高两个棋盘的可见坐标字号与对比度，其他交互、题目和存储不变。
+- build 17 根据本人反馈调整学习入口、课程层级、答题反馈与本地导出页；修正棋盘深浅格，并为每次导出生成时间与完整 UUID 默认文件名。棋规、题目定义与用户存储格式不变。
+
+- 自愿条件对照实验：三种结构 × 四条件，统一反馈，保留首答、提示/已见排除与事后重试；实际结束 24 小时后四题本机新局面复测。完整规则、题源与限制见根目录 `docs/condition-study.md`。
+
+- 默认学习首页；无账号的构造 PGN 交互示例，临时数据和个人进度隔离。
+- 证据项可补记看过反馈后的候选着与理由，原始记录不覆盖；模拟到期只用于示例。
+- iPad 原生尺寸和方向支持；示例、来源、边界见 `docs/app-review-demo.md`。
 
 - 离线人机对弈：选择执白或执黑、三档搜索时间、合法走子提示、升变、悔棋、暂停、认输；每步自动保存。
 - 完整棋谱：继续历史棋局、逐步回放、跳转任一步、导出含结果和初始局面的 PGN。
@@ -47,6 +57,6 @@ node --test scripts/review-tests.cjs
 
 ## 本地数据与许可
 
-数据在 App 沙盒 `Library/Application Support/YiwaiPractice/` 下的 `notebook.json` 和 `games-v1.json`。读取失败保留原文件并提示；卸载 App 会删除记录。测试使用独立数据文件。
+数据在 App 沙盒 `Library/Application Support/YiwaiPractice/` 下的 `notebook.json` 、`games-v1.json`、`decisions-v1.json` 和 `conditions-v1.json`。读取失败保留原文件并提示；卸载 App 会删除记录。测试使用独立数据文件。
 
 完整来源见根目录 `NOTICE.md`。原创 App、适配代码和原创资源按 GPL-3.0-or-later 授权；chess.js 保留 BSD-2-Clause，Stockfish 保留其 GPL 许可。上游源码可在关于页导出，完整 App 对应源码由本仓库提供。

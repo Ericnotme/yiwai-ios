@@ -88,6 +88,7 @@ struct DecisionDetailView: View {
     @EnvironmentObject private var game: GameController
     @State private var sessionID: UUID?
     @State private var showingSession = false
+    @State private var supplementing = false
     @State private var error: String?
     private var item: ReforgeItem? { decisions.data.items.first { $0.id == itemID } }
     var body: some View {
@@ -103,13 +104,28 @@ struct DecisionDetailView: View {
                     }
                     Text("候选着：\(note.candidates.isEmpty ? "未记录" : note.candidates)").textSelection(.enabled).accessibilityIdentifier("savedDecisionCandidates")
                     Text("理由：\(note.reason.isEmpty ? "未记录" : note.reason)").textSelection(.enabled).accessibilityIdentifier("savedDecisionReason")
+                    ForEach(note.recollections ?? []) { entry in
+                        VStack(alignment:.leading,spacing:6) {
+                            Text("事后补记 · 已看过反馈（可能不完整）").font(.subheadline.weight(.semibold))
+                            Text(entry.recordedAt,format:.dateTime.year().month().day().hour().minute()).font(.caption)
+                            if entry.skipped { Text("主动跳过，未代写理由") }
+                            else {
+                                Text("候选着：\(entry.candidates.isEmpty ? "未记录" : entry.candidates)")
+                                Text("理由：\(entry.reason.isEmpty ? "未记录" : entry.reason)").accessibilityIdentifier("supplementReason")
+                            }
+                        }.padding(12).frame(maxWidth:.infinity,alignment:.leading).background(.white,in:RoundedRectangle(cornerRadius:12))
+                    }
+                    if (note.recollections?.count ?? 0) < 10 {
+                        Button("补记现在的候选着与理由（可跳过）") { supplementing = true }
+                            .frame(minHeight:44).accessibilityIdentifier("addRecollection")
+                    }
                     Picker("我的棋理标签",selection:Binding(get:{note.tag},set:{tag in
                         do { try decisions.changeTag(noteID:note.id,tag:tag); error = nil } catch { self.error = error.localizedDescription }
                     })) { ForEach(DecisionTag.allCases,id:\.self) { Text($0.title).tag($0) } }.accessibilityIdentifier("correctDecisionTag")
                     Text(note.tag.explanation).font(.caption).foregroundStyle(.secondary)
-                    Text(item.status).font(.headline).accessibilityIdentifier("reforgeMastery")
+                    Text(decisions.demonstration ? "示例记录 · 不计个人学习进度" : item.status).font(.headline).accessibilityIdentifier("reforgeMastery")
                     Text("下次复习：\(item.dueAt.formatted(date:.abbreviated,time:.shortened))").accessibilityIdentifier("reforgeDue")
-                    Text("新题会排除本机棋谱、原有题库和已展示局面；无法识别你在其他地方看过的题。题库用完会显示待准备。").font(.caption)
+                    Text(decisions.demonstration ? "示例复测使用不同于本次练习的局面，示例可重复体验；不代表你在其他地方从未见过。题库用尽会显示待准备。" : "新题会排除本机棋谱、原有题库和已展示局面（包括示例）；无法识别你在其他地方看过的题。题库用完会显示待准备。").font(.caption)
                     if let error { Text(error).foregroundStyle(.red).accessibilityIdentifier("reforgeError") }
                     if note.evidence != nil && !decisions.data.sessions.contains(where:{$0.itemID == itemID && $0.kind == "practice" && $0.finished}) {
                         Button("开始一题针对性练习") { start(practice:true) }
@@ -132,6 +148,7 @@ struct DecisionDetailView: View {
                 }.padding(16).frame(maxWidth:560)
             }
         }.background(Palette.paper).navigationTitle("回看这处决策").navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented:$supplementing) { if let item, let note = decisions.note(for:item) { RecollectionView(noteID:note.id) } }
         .navigationDestination(isPresented:$showingSession) { if let sessionID { ReforgeSessionView(sessionID:sessionID) } }
     }
     private func start(original: Bool = false, practice: Bool = false) {
@@ -209,6 +226,42 @@ struct ReforgeSessionView: View {
     }
     private func submit(skipped: Bool = false) {
         do { try decisions.submit(sessionID:sessionID,move:pending?.code,skipped:skipped); error = nil }
+        catch { self.error = error.localizedDescription }
+    }
+}
+
+struct RecollectionView: View {
+    let noteID: UUID
+    @EnvironmentObject private var decisions: DecisionStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var candidates = ""
+    @State private var reason = ""
+    @State private var error: String?
+    @FocusState private var editing: Bool
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    if decisions.demonstration { Text("示例补记 · 不计个人进度").font(.caption) }
+                    Text("事后补记 · 已看过反馈").font(.headline).accessibilityIdentifier("recollectionTiming")
+                    Text("这是你现在的回忆或反思，可能不完整。不会改写之前的原话、落子前记录或记录时间；也不会代写理由。")
+                }
+                Section("由你填写，可跳过") {
+                    TextField("候选着",text:$candidates,axis:.vertical).lineLimit(2...4).focused($editing).accessibilityIdentifier("recollectionCandidates")
+                    TextEditor(text:$reason).frame(height:140).focused($editing).accessibilityLabel("事后补记理由").accessibilityIdentifier("recollectionReason")
+                }
+                if let error { Text(error).foregroundStyle(.red) }
+                Button("这次跳过") { save(skipped:true) }.frame(minHeight:44).accessibilityIdentifier("skipRecollection")
+            }.navigationTitle("补记自己的理由").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement:.cancellationAction) { Button("取消") { dismiss() } }
+                ToolbarItem(placement:.confirmationAction) { Button("保存补记") { save() }.accessibilityIdentifier("saveRecollection") }
+                ToolbarItemGroup(placement:.keyboard) { Spacer(); Button("收起键盘") { editing = false } }
+            }
+        }
+    }
+    private func save(skipped: Bool = false) {
+        do { try decisions.appendRecollection(noteID:noteID,candidates:candidates,reason:reason,skipped:skipped); dismiss() }
         catch { self.error = error.localizedDescription }
     }
 }

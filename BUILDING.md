@@ -1,4 +1,6 @@
-# 构建 0.4.0（10）
+> **2026-11-27 local Fortress integration:** candidate 0.4.4 (18), based on the preserved 0.4.3 (13) source `aed8347`; must not be uploaded before release gates are complete. See [source reconciliation](docs/fortress-source-reconciliation.md) and [release gates](docs/fortress-release-gates.md).
+
+# 构建 0.4.4（18）
 
 ## 原生应用
 
@@ -16,7 +18,7 @@ node --test scripts/*-tests.cjs
 
 模拟器测试可用 `scripts/test.sh`，默认选择 iPhone 16e；若未安装该设备，使用本机已有模拟器替换脚本中的 destination。运行完整 UI 测试需要相应模拟器运行时和足够磁盘空间。
 
-工程默认 `CODE_SIGNING_ALLOWED=NO`，没有写入 Team、证书或描述文件。实机安装时用 Xcode 打开工程，使用自己的唯一 Bundle Identifier 和 Signing & Capabilities 配置。只需常规签名，不需要原开发者密钥。没有隐藏激活、服务口令或安装授权数据。
+工程默认 `CODE_SIGNING_ALLOWED=NO`，没有写入 Team、证书或描述文件。本项目的真机验收和后续发行继续使用既有 `chat.weijiaxian.yiwai.practice`、已授权 Team 和有效签名；不会创建新 Bundle Identifier 绕过拒审。其他开发者自行构建须使用其有权使用的签名身份，不需要也不提供原开发者私钥。没有隐藏激活、服务口令或安装授权数据。
 
 ## 重新编译上游 Stockfish
 

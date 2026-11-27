@@ -22,7 +22,7 @@ def configs(name,settings):
     return obj(name+'configs','XCConfigurationList',buildConfigurations=ids,defaultConfigurationIsVisible=0,defaultConfigurationName='Release')
 
 sourceFiles = [ref(str(p.relative_to(root)),'sourcecode.swift') for p in sorted((root/'Sources').glob('*.swift'))]
-resources = [ref('Resources/'+p, 'sourcecode.javascript' if p.endswith('.js') else 'text') for p in ['chess.js','position-import.js','chess-bridge.js','seed-engine.js','game-review.js','stockfish-review.js','chess-LICENSE.txt','PrivacyPolicy.txt','reforge-puzzles.json']]
+resources = [ref('Resources/'+p, 'sourcecode.javascript' if p.endswith('.js') else 'text') for p in ['personal-evidence.js','chess.js','position-import.js','chess-bridge.js','seed-engine.js','game-review.js','stockfish-review.js','chess-LICENSE.txt','PrivacyPolicy.txt','reforge-puzzles.json','learning-demo.json','condition-catalog.json','condition-engine-verification.json','fortress-course-v1.json']]
 resources.append(ref('Resources/Stockfish','folder'))
 # Localized launcher display names; product and bundle identities stay stable.
 for language in ['en','zh-Hans','zh-Hant']:
@@ -40,9 +40,9 @@ unitProduct=obj('unit-product','PBXFileReference',explicitFileType='wrapper.cfbu
 uiProduct=obj('ui-product','PBXFileReference',explicitFileType='wrapper.cfbundle',includeInIndex=0,path='YiwaiUITests.xctest',sourceTree='BUILT_PRODUCTS_DIR')
 products=obj('products','PBXGroup',children=[appProduct,unitProduct,uiProduct],name='Products',sourceTree='<group>')
 main=obj('main','PBXGroup',children=sourceFiles+resources+unitFiles+uiFiles+[products],sourceTree='<group>')
-projectConfig=configs('project',{'SDKROOT':'iphoneos','IPHONEOS_DEPLOYMENT_TARGET':'17.0','SWIFT_VERSION':'5.0','CLANG_ENABLE_MODULES':'YES','TARGETED_DEVICE_FAMILY':'1','CODE_SIGN_STYLE':'Manual','CODE_SIGNING_ALLOWED':'NO','ENABLE_USER_SCRIPT_SANDBOXING':'YES'})
-base={'GENERATE_INFOPLIST_FILE':'YES','PRODUCT_NAME':'$(TARGET_NAME)','CURRENT_PROJECT_VERSION':'10','MARKETING_VERSION':'0.4.0'}
-appConfig=configs('app',dict(base,PRODUCT_BUNDLE_IDENTIFIER='chat.weijiaxian.yiwai.practice',INFOPLIST_KEY_ITSAppUsesNonExemptEncryption='NO',INFOPLIST_KEY_CFBundleDisplayName='弈外练习',INFOPLIST_KEY_LSApplicationCategoryType='public.app-category.education',INFOPLIST_KEY_UILaunchScreen_Generation='YES',INFOPLIST_KEY_UIApplicationSceneManifest_Generation='YES',INFOPLIST_KEY_UISupportedInterfaceOrientations='UIInterfaceOrientationPortrait',ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks'))
+projectConfig=configs('project',{'SDKROOT':'iphoneos','IPHONEOS_DEPLOYMENT_TARGET':'17.0','SWIFT_VERSION':'5.0','CLANG_ENABLE_MODULES':'YES','TARGETED_DEVICE_FAMILY':'1,2','CODE_SIGN_STYLE':'Manual','CODE_SIGNING_ALLOWED':'NO','ENABLE_USER_SCRIPT_SANDBOXING':'YES'})
+base={'GENERATE_INFOPLIST_FILE':'YES','PRODUCT_NAME':'$(TARGET_NAME)','CURRENT_PROJECT_VERSION':'18','MARKETING_VERSION':'0.4.4'}
+appConfig=configs('app',dict(base,PRODUCT_BUNDLE_IDENTIFIER='chat.weijiaxian.yiwai.practice',INFOPLIST_KEY_ITSAppUsesNonExemptEncryption='NO',INFOPLIST_KEY_CFBundleDisplayName='弈外练习',INFOPLIST_KEY_LSApplicationCategoryType='public.app-category.education',INFOPLIST_KEY_UILaunchScreen_Generation='YES',INFOPLIST_KEY_UIApplicationSceneManifest_Generation='YES',INFOPLIST_KEY_UISupportedInterfaceOrientations='UIInterfaceOrientationPortrait',INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad='UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight',ASSETCATALOG_COMPILER_APPICON_NAME='AppIcon',LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks'))
 app=obj('app','PBXNativeTarget',buildConfigurationList=appConfig,buildPhases=[phase('app-src','PBXSourcesBuildPhase',[build(f,'app') for f in sourceFiles]),phase('app-fw','PBXFrameworksBuildPhase',[]),phase('app-res','PBXResourcesBuildPhase',[build(f,'res') for f in resources])],buildRules=[],dependencies=[],name='YiwaiPractice',productName='YiwaiPractice',productReference=appProduct,productType='com.apple.product-type.application')
 def testTarget(name,files,product,settings,kind):
     dep=obj(name+'dep','PBXTargetDependency',target=app)

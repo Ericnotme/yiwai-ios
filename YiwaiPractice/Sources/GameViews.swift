@@ -8,7 +8,7 @@ struct GameBoard: View {
     var targets: Set<String> = []
     var enabled = false
     var tap: (String) -> Void = { _ in }
-    var drag: (String,String) -> Void = { _,_ in }
+    var drag: ((String,String) -> Void)? = nil
     var body: some View {
         VStack(spacing:3) {
             GeometryReader { geometry in
@@ -23,13 +23,13 @@ struct GameBoard: View {
                                 let piece = frame.pieces.first { $0.square == square }
                                 Button { tap(square) } label: {
                                     ZStack {
-                                        Rectangle().fill((file+rank)%2 == 0 ? Color(red:0.75,green:0.82,blue:0.76) : Color(red:0.96,green:0.94,blue:0.88))
+                                        Rectangle().fill(Palette.boardSquare(file:file,rank:rank))
                                         if [frame.from,frame.to].contains(square) { Rectangle().fill(Color.yellow.opacity(0.30)) }
                                         if targets.contains(square) { Circle().fill(Palette.sage.opacity(0.5)).frame(width:size*0.25,height:size*0.25) }
                                         if let piece { Text(piece.symbol).font(.system(size:size*0.79)).foregroundStyle(piece.color == "w" ? Color.white : Palette.ink).shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:1).shadow(color:Palette.ink.opacity(piece.color == "w" ? 0.8 : 0),radius:0.6,x:0,y:-1) }
                                         if selected == square { Rectangle().strokeBorder(Palette.coral,lineWidth:3) }
                                         if piece?.type == "k" && piece?.color == frame.turn && frame.check { Rectangle().strokeBorder(.red,lineWidth:2) }
-                                        if column == 0 { VStack { HStack { Text(String(rank)).font(.system(size:9,weight:.bold)); Spacer() }; Spacer() }.padding(2).foregroundStyle(Palette.ink) }
+                                        if column == 0 { VStack { HStack { Text(String(rank)).font(.system(size:11,weight:.semibold)); Spacer() }; Spacer() }.padding(2).foregroundStyle(Palette.ink) }
                                     }.frame(width:size,height:size)
                                 }.buttonStyle(.plain).disabled(!enabled).accessibilityLabel("\(square)，\(piece?.name ?? "空格")\(targets.contains(square) ? "，可以走到" : "")").accessibilityIdentifier("square-\(square)")
                             }
@@ -43,10 +43,10 @@ struct GameBoard: View {
                             let column = Int(point.x/size), row = Int(point.y/size)
                             return String(Array("abcdefgh")[flipped ? 7-column : column])+String(flipped ? row+1 : 8-row)
                         }
-                        if let from = square(value.startLocation), let to = square(value.location), from != to { drag(from,to) }
-                    })
+                        if let from = square(value.startLocation), let to = square(value.location), from != to { drag?(from,to) }
+                    }, including: enabled && drag != nil ? .all : .subviews)
             }.aspectRatio(1,contentMode:.fit)
-            HStack(spacing:0) { ForEach(flipped ? Array("hgfedcba") : Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2).frame(maxWidth:.infinity) } }.foregroundStyle(.secondary).accessibilityHidden(true)
+            HStack(spacing:0) { ForEach(flipped ? Array("hgfedcba") : Array("abcdefgh"),id:\.self) { file in Text(String(file)).font(.caption2.weight(.semibold)).frame(maxWidth:.infinity) } }.foregroundStyle(Palette.ink).accessibilityHidden(true)
         }
     }
 }
@@ -167,7 +167,7 @@ struct GameHistoryView: View {
                         }
                     }
                 }
-            }.scrollContentBackground(.hidden).background(Palette.paper).navigationTitle("棋谱")
+            }.listStyle(.insetGrouped).scrollContentBackground(.hidden).background(Palette.paper).foregroundStyle(Palette.ink).navigationTitle("棋谱")
             .toolbar { Button("导入 FEN / PGN") { importing = true }.accessibilityIdentifier("importPosition") }
             .sheet(isPresented:$importing) { PositionImportView() }
         }
